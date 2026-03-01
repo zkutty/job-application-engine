@@ -1,0 +1,24 @@
+{
+  "roleTitleGuess": "Senior Product Manager",
+  "seniorityGuess": "Senior",
+  "competencies": [
+    "Product strategy",
+    "Experimentation",
+    "Stakeholder management",
+    "Roadmap planning"
+  ],
+  "keywords": [
+    "activation",
+    "retention",
+    "monetization",
+    "A/B testing",
+    "PLG"
+  ],
+  "tools": [
+    "Amplitude",
+    "Mixpanel",
+    "Looker",
+    "Jira",
+    "Figma"
+  ]
+}

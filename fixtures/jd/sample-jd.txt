@@ -1,0 +1,5 @@
+Senior Product Manager, Growth
+
+We are hiring a Senior Product Manager to lead growth initiatives across activation, retention, and monetization. You will partner with engineering, design, analytics, and marketing to define roadmap priorities, write clear product requirements, and run A/B experiments. The role requires strong stakeholder communication, data-informed decision-making, and experience with SQL-based analysis.
+
+Preferred tools and experience: Amplitude, Mixpanel, Looker, Jira, Figma, and experimentation platforms. Experience with B2B SaaS and PLG motions is a plus.
