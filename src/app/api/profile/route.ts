@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
-
-const ProfileInputSchema = z.object({
-  name: z.string().trim().min(1),
-  headline: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
-  skillsJson: z.string().trim().min(2),
-  voiceGuidelines: z.string().trim().min(1),
-});
+import { ProfileUpsertSchema } from "@/lib/validation/profile";
 
 export async function GET() {
   const profile = await prisma.candidateProfile.findFirst({
@@ -22,7 +14,7 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const body = (await request.json()) as unknown;
-    const parsed = ProfileInputSchema.safeParse(body);
+    const parsed = ProfileUpsertSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(

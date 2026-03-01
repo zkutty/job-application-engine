@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
 type Profile = {
@@ -9,6 +10,8 @@ type Profile = {
   summary: string;
   skillsJson: string;
   voiceGuidelines: string;
+  profileJson?: string;
+  rawResumeText?: string;
 };
 
 const emptyProfile: Profile = {
@@ -17,6 +20,8 @@ const emptyProfile: Profile = {
   summary: "",
   skillsJson: "[]",
   voiceGuidelines: "",
+  profileJson: "",
+  rawResumeText: "",
 };
 
 export default function ProfilePage() {
@@ -52,6 +57,9 @@ export default function ProfilePage() {
     <main>
       <section className="card stack">
         <h1>Candidate Profile</h1>
+        <p className="small">
+          You can also import from PDF at <Link href="/profile/import">/profile/import</Link>.
+        </p>
         <form className="stack" onSubmit={handleSubmit}>
           <label>
             Name

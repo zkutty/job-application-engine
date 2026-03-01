@@ -19,6 +19,7 @@ export default function RootLayout({
           <nav>
             <Link href="/">Home</Link>
             <Link href="/profile">Profile</Link>
+            <Link href="/profile/import">Import Profile</Link>
             <Link href="/stories">Stories</Link>
           </nav>
         </header>

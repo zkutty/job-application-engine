@@ -35,6 +35,8 @@ model CandidateProfile {
   summary         String
   skillsJson      String
   voiceGuidelines String
+  profileJson     String?
+  rawResumeText   String?
 }
 
 model Story {
