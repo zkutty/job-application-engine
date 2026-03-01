@@ -16,11 +16,15 @@ function parseId(params: { id: string }): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+type StoryRouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: StoryRouteContext,
 ) {
-  const id = parseId(params);
+  const id = parseId(await params);
   if (!id) {
     return NextResponse.json({ error: "Invalid story id." }, { status: 400 });
   }
@@ -49,9 +53,9 @@ export async function PUT(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: StoryRouteContext,
 ) {
-  const id = parseId(params);
+  const id = parseId(await params);
   if (!id) {
     return NextResponse.json({ error: "Invalid story id." }, { status: 400 });
   }
