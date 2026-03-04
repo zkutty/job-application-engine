@@ -25,6 +25,48 @@ function storyResultWithPlaceholder(result: string): string {
   return /\d/.test(trimmed) ? trimmed : `${trimmed} [insert metric]`;
 }
 
+export async function GET() {
+  try {
+    const artifacts = await prisma.artifact.findMany({
+      where: { type: "question_bank" },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      select: {
+        id: true,
+        createdAt: true,
+        content: true,
+        job: {
+          select: {
+            id: true,
+            company: true,
+            title: true,
+            jdText: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(
+      {
+        questionBanks: artifacts.map((artifact) => ({
+          artifactId: artifact.id,
+          createdAt: artifact.createdAt,
+          markdown: artifact.content,
+          jobId: artifact.job.id,
+          company: artifact.job.company ?? "Unknown Company",
+          roleTitle: artifact.job.title ?? "Untitled Role",
+          displayName: `${artifact.job.company ?? "Unknown Company"} - ${artifact.job.title ?? "Untitled Role"}`,
+          jdPreview: artifact.job.jdText.slice(0, 120),
+          jdText: artifact.job.jdText,
+        })),
+      },
+      { status: 200 },
+    );
+  } catch {
+    return NextResponse.json({ error: "Failed to load saved question banks." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as unknown;
@@ -76,6 +118,7 @@ export async function POST(request: Request) {
     const record = await prisma.job.create({
       data: {
         jdText: parsed.data.jobDescription,
+        company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
         artifacts: {
           create: {
@@ -97,6 +140,8 @@ export async function POST(request: Request) {
       {
         markdown,
         questionBank,
+        company: jdSignals.companyGuess,
+        roleTitle: jdSignals.roleTitleGuess,
         artifactId: record.artifacts[0]?.id,
         createdAt: record.artifacts[0]?.createdAt,
       },

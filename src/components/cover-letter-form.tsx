@@ -9,11 +9,24 @@ type HistoryItem = {
 };
 
 type JdAnalysis = {
+  companyGuess: string;
   roleTitleGuess: string;
   seniorityGuess: string;
   competencies: string[];
   keywords: string[];
   tools: string[];
+};
+
+type SavedQuestionBank = {
+  artifactId: number;
+  createdAt: string;
+  markdown: string;
+  jobId: number;
+  company: string;
+  roleTitle: string;
+  displayName: string;
+  jdPreview: string;
+  jdText: string;
 };
 
 export function CoverLetterForm() {
@@ -25,6 +38,10 @@ export function CoverLetterForm() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingQuestionBank, setIsGeneratingQuestionBank] = useState(false);
+  const [savedQuestionBanks, setSavedQuestionBanks] = useState<SavedQuestionBank[]>([]);
+  const [selectedQuestionBankId, setSelectedQuestionBankId] = useState<number | null>(null);
+  const [renameCompany, setRenameCompany] = useState("");
+  const [renameRole, setRenameRole] = useState("");
 
   const [analysis, setAnalysis] = useState<JdAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -43,9 +60,38 @@ export function CoverLetterForm() {
     }
   }
 
+  async function loadQuestionBankHistory() {
+    try {
+      const response = await fetch("/api/question-bank", { method: "GET" });
+      const payload = (await response.json()) as { questionBanks?: SavedQuestionBank[] };
+      if (response.ok && payload.questionBanks) {
+        setSavedQuestionBanks(payload.questionBanks);
+      }
+    } catch {
+      // Ignore load errors; generation still works.
+    }
+  }
+
   useEffect(() => {
     void loadHistory();
+    void loadQuestionBankHistory();
   }, []);
+
+  useEffect(() => {
+    if (!selectedQuestionBankId) {
+      setRenameCompany("");
+      setRenameRole("");
+      return;
+    }
+
+    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    if (!selected) {
+      return;
+    }
+
+    setRenameCompany(selected.company);
+    setRenameRole(selected.roleTitle);
+  }, [savedQuestionBanks, selectedQuestionBankId]);
 
   async function runAnalysis(text: string) {
     if (text.trim().length < 40) {
@@ -139,6 +185,7 @@ export function CoverLetterForm() {
 
       setQuestionBankMarkdown(payload.markdown);
       await loadHistory();
+      await loadQuestionBankHistory();
     } catch (generationError) {
       const message =
         generationError instanceof Error ? generationError.message : "Failed to generate question bank.";
@@ -146,6 +193,68 @@ export function CoverLetterForm() {
     } finally {
       setIsGeneratingQuestionBank(false);
     }
+  }
+
+  function handleLoadSavedQuestionBank() {
+    if (!selectedQuestionBankId) {
+      return;
+    }
+
+    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    if (!selected) {
+      return;
+    }
+
+    setQuestionBankMarkdown(selected.markdown);
+    setJobDescription(selected.jdText);
+    void runAnalysis(selected.jdText);
+  }
+
+  async function handleRenameSelectedJob() {
+    if (!selectedQuestionBankId) {
+      return;
+    }
+
+    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    if (!selected) {
+      return;
+    }
+
+    const company = renameCompany.trim();
+    const title = renameRole.trim();
+    if (!company || !title) {
+      setQuestionBankError("Both company and role are required to rename.");
+      return;
+    }
+
+    setQuestionBankError(null);
+
+    const response = await fetch(`/api/jobs/${selected.jobId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ company, title }),
+    });
+
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setQuestionBankError(payload.error ?? "Failed to rename saved JD.");
+      return;
+    }
+
+    setSavedQuestionBanks((current) =>
+      current.map((item) =>
+        item.jobId === selected.jobId
+          ? {
+              ...item,
+              company,
+              roleTitle: title,
+              displayName: `${company} - ${title}`,
+            }
+          : item,
+      ),
+    );
   }
 
   function exportQuestionBankMarkdown() {
@@ -201,6 +310,57 @@ export function CoverLetterForm() {
         </section>
 
         <section className="card stack">
+          <h2>Saved Question Banks by Role</h2>
+          {savedQuestionBanks.length === 0 ? (
+            <p className="small">No saved question banks yet.</p>
+          ) : (
+            <>
+              <label htmlFor="savedQuestionBank">Select a saved role/JD</label>
+              <select
+                id="savedQuestionBank"
+                value={selectedQuestionBankId ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedQuestionBankId(value ? Number(value) : null);
+                }}
+              >
+                <option value="">Choose one...</option>
+                {savedQuestionBanks.map((item) => (
+                  <option key={item.artifactId} value={item.artifactId}>
+                    {item.displayName} - {new Date(item.createdAt).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={handleLoadSavedQuestionBank} disabled={!selectedQuestionBankId}>
+                Load Selected Question Bank
+              </button>
+              {selectedQuestionBankId ? (
+                <>
+                  <label htmlFor="renameCompany">Company</label>
+                  <input
+                    id="renameCompany"
+                    value={renameCompany}
+                    onChange={(event) => setRenameCompany(event.target.value)}
+                  />
+                  <label htmlFor="renameRole">Role</label>
+                  <input id="renameRole" value={renameRole} onChange={(event) => setRenameRole(event.target.value)} />
+                  <button type="button" onClick={() => void handleRenameSelectedJob()}>
+                    Rename Selected JD
+                  </button>
+                </>
+              ) : null}
+              {selectedQuestionBankId ? (
+                <p className="small">
+                  JD Preview:{" "}
+                  {savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId)?.jdPreview}
+                  ...
+                </p>
+              ) : null}
+            </>
+          )}
+        </section>
+
+        <section className="card stack">
           <h2>Generated Cover Letter</h2>
           {coverLetter ? (
             <div className="output">{coverLetter}</div>
@@ -247,6 +407,9 @@ export function CoverLetterForm() {
           <p className="small">Paste a JD or click Analyze JD to extract competencies, keywords, and tools.</p>
         ) : (
           <>
+            <div>
+              <strong>Company Guess:</strong> <span className="small">{analysis.companyGuess}</span>
+            </div>
             <div>
               <strong>Role Guess:</strong> <span className="small">{analysis.roleTitleGuess}</span>
             </div>

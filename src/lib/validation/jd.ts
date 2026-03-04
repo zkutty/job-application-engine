@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const JdAnalysisSchema = z.object({
+  companyGuess: z.string().min(1),
   roleTitleGuess: z.string().min(1),
   seniorityGuess: z.string().min(1),
   competencies: z.array(z.string().min(1)).max(8),
