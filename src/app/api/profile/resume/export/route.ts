@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { buildResumeHtml } from "@/lib/profile/exportHtml";
+import { buildResumeDocxBuffer } from "@/lib/profile/exportDocx";
 
 const ResumeExportSchema = z.object({
   candidateName: z.string().trim().min(1).max(120),
@@ -20,14 +20,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const html = buildResumeHtml(parsed.data);
+    const docxBuffer = await buildResumeDocxBuffer(parsed.data);
     const safeName = parsed.data.candidateName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const fileName = `${safeName || "candidate"}-resume.html`;
+    const fileName = `${safeName || "candidate"}-resume.docx`;
 
-    return new NextResponse(html, {
+    return new NextResponse(new Uint8Array(docxBuffer), {
       status: 200,
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "X-Content-Type-Options": "nosniff",
         "Content-Disposition": `attachment; filename="${fileName}"`,
       },

@@ -178,7 +178,7 @@ export default function ProfileImportPage() {
     }
   }
 
-  async function handleDownloadHtml() {
+  async function handleDownloadDocx() {
     const resumeText = rewrittenResume || rawResumeText;
     if (!resumeText) {
       setStatus("No resume text available to export.");
@@ -203,17 +203,27 @@ export default function ProfileImportPage() {
         throw new Error(payload.error ?? "Failed to export resume.");
       }
 
-      const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition") ?? "";
+      const fileNameFromHeader = contentDisposition.match(/filename="([^"]+)"/)?.[1];
+      const fileName =
+        fileNameFromHeader ??
+        `${(importedProfile.name || "candidate").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-resume.docx`;
+
+      const bytes = await response.arrayBuffer();
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${(importedProfile.name || "candidate").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-resume.html`;
+      anchor.download = fileName;
+      anchor.rel = "noopener";
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      setStatus("Downloaded .html resume. Open in browser or paste into Word/Docs.");
+      setStatus("Downloaded .docx resume with polished formatting.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Failed to export resume.");
     } finally {
@@ -241,8 +251,8 @@ export default function ProfileImportPage() {
           <button type="button" disabled={loading} onClick={() => void handleEnhanceResume()}>
             Run AI Resume Edits
           </button>
-          <button type="button" disabled={loading} onClick={() => void handleDownloadHtml()}>
-            Download Resume HTML
+          <button type="button" disabled={loading} onClick={() => void handleDownloadDocx()}>
+            Download Resume DOCX
           </button>
         </form>
         <p className="small">{status}</p>

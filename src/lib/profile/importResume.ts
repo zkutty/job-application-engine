@@ -3,6 +3,9 @@ import pdfParse from "pdf-parse";
 import { getOpenAIClient, OPENAI_MODEL } from "@/lib/openai/client";
 import { ImportedProfileSchema, type ImportedProfile } from "@/lib/validation/profile";
 
+const defaultVoiceGuidelines =
+  "Use concise, specific language grounded in the resume. Do not add unsupported metrics.";
+
 export async function extractPdfText(fileBuffer: Buffer): Promise<string> {
   const result = await pdfParse(fileBuffer);
   return result.text.trim();
@@ -66,6 +69,14 @@ export async function parseProfileFromResumeText(rawResumeText: string): Promise
     throw new Error("OpenAI returned an empty profile import response.");
   }
 
-  const parsed = JSON.parse(content) as unknown;
-  return normalizeProfile(ImportedProfileSchema.parse(parsed));
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  const safePayload = {
+    ...parsed,
+    voiceGuidelines:
+      typeof parsed.voiceGuidelines === "string" && parsed.voiceGuidelines.trim().length > 0
+        ? parsed.voiceGuidelines
+        : defaultVoiceGuidelines,
+  };
+
+  return normalizeProfile(ImportedProfileSchema.parse(safePayload));
 }
