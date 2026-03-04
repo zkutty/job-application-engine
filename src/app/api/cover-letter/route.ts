@@ -102,6 +102,8 @@ export async function POST(request: Request) {
     const record = await prisma.job.create({
       data: {
         jdText: resolvedJobDescription,
+        jdSummary: resolvedJobDescription,
+        jdInsightsJson: JSON.stringify(jdSignals),
         company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
         userId: auth.userId,

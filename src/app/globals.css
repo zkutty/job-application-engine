@@ -111,6 +111,143 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.noteActionRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.noteMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.noteMetaActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.compactButton {
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.dangerButton {
+  background: #c62828;
+}
+
+.dangerButton:hover {
+  background: #b71c1c;
+}
+
+.softActionButton {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.softActionButton:hover {
+  background: #e2e8f0;
+}
+
+.softDangerButton {
+  background: #fff1f2;
+  color: #9f1239;
+  border-color: #fecdd3;
+}
+
+.softDangerButton:hover {
+  background: #ffe4e6;
+}
+
+.stageBadge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+
+.stage-exploring {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+
+.stage-interested {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.stage-in_progress {
+  background: #ecfeff;
+  color: #0e7490;
+  border-color: #a5f3fc;
+}
+
+.stage-applied {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.stage-screening {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.stage-interviewing {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.stage-final_round {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.stage-offer {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.stage-accepted {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.stage-rejected {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.stage-withdrawn {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
 .output {
   white-space: pre-wrap;
   line-height: 1.55;

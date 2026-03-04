@@ -8,6 +8,7 @@ import { generateQuestionBank } from "@/lib/question-bank/generate";
 import { questionBankToMarkdown } from "@/lib/prompts/questionBank";
 import { selectTopStories } from "@/lib/stories/select";
 import { CoverLetterInputSchema } from "@/lib/validation/coverLetter";
+import { JdAnalysisSchema, type JdAnalysis } from "@/lib/validation/jd";
 
 function parseStringArray(value: string): string[] {
   try {
@@ -25,6 +26,18 @@ function storyResultWithPlaceholder(result: string): string {
   }
 
   return /\d/.test(trimmed) ? trimmed : `${trimmed} [insert metric]`;
+}
+
+function parseSavedInsights(value: string | null): JdAnalysis | null {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    const validated = JdAnalysisSchema.safeParse(parsed);
+    return validated.success ? validated.data : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: Request) {
@@ -46,6 +59,9 @@ export async function GET(request: Request) {
             company: true,
             title: true,
             jdText: true,
+            jdSummary: true,
+            jdInsightsJson: true,
+            applicationStage: true,
           },
         },
       },
@@ -63,6 +79,9 @@ export async function GET(request: Request) {
           displayName: `${artifact.job.company ?? "Unknown Company"} - ${artifact.job.title ?? "Untitled Role"}`,
           jdPreview: artifact.job.jdText.slice(0, 120),
           jdText: artifact.job.jdText,
+          jdSummary: artifact.job.jdSummary ?? artifact.job.jdText,
+          jdInsights: parseSavedInsights(artifact.job.jdInsightsJson),
+          applicationStage: artifact.job.applicationStage,
         })),
       },
       { status: 200 },
@@ -128,6 +147,8 @@ export async function POST(request: Request) {
     const record = await prisma.job.create({
       data: {
         jdText: resolvedJobDescription,
+        jdSummary: resolvedJobDescription,
+        jdInsightsJson: JSON.stringify(jdSignals),
         company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
         userId: auth.userId,
