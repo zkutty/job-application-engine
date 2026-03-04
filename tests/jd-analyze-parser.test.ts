@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { JdAnalysisSchema } from "@/lib/jd/analyze";
+import { JdAnalysisSchema } from "../src/lib/validation/jd.ts";
 
 test("JdAnalysisSchema parses valid analyzer output", () => {
   const parsed = JdAnalysisSchema.parse({

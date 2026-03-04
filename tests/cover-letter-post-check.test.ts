@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { postCheckCoverLetter } from "@/lib/safety/coverLetter";
+import { postCheckCoverLetter } from "../src/lib/safety/coverLetter.ts";
 
 test("postCheckCoverLetter keeps allowed numbers and replaces unknown metrics", () => {
   const result = postCheckCoverLetter({
