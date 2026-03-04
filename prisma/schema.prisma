@@ -13,6 +13,9 @@ model Job {
   title            String?
   company          String?
   jdText           String
+  rawJdInput       String?
+  jdSummary        String?
+  jdInsightsJson   String?
   applicationStage String     @default("exploring")
   artifacts        Artifact[]
   notes            JobNote[]

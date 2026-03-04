@@ -88,6 +88,7 @@ Open: `http://localhost:3000`
 10. If a protected job page cannot be extracted (common on some LinkedIn views), paste the JD text directly.
 11. Use the `Job URL` input and `Extract JD from URL` to populate the JD textbox before analysis.
 12. For each saved JD, set an application stage and add timestamped notes (create/edit/delete) tied to that stage.
+13. Saved JDs persist summarized JD text and JD insights for later reload in the sidebar.
 
 ## Resume Import + AI Edits
 1. Open `/profile/import`.

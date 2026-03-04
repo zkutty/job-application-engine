@@ -32,6 +32,7 @@ type SavedQuestionBank = {
   displayName: string;
   jdPreview: string;
   jdText: string;
+  jdInsights?: JdAnalysis | null;
   applicationStage: ApplicationStage;
 };
 
@@ -183,6 +184,8 @@ export function CoverLetterForm() {
       return;
     }
 
+    const selected = getSelectedQuestionBank();
+
     setAnalysisError(null);
     setIsAnalyzing(true);
 
@@ -192,7 +195,7 @@ export function CoverLetterForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ jdText: text }),
+        body: JSON.stringify({ jdText: text, jobId: selected?.jobId }),
       });
 
       const payload = (await response.json()) as { analysis?: JdAnalysis; error?: string };
@@ -319,6 +322,11 @@ export function CoverLetterForm() {
 
     setQuestionBankMarkdown(selected.markdown);
     setJobDescription(selected.jdText);
+    if (selected.jdInsights) {
+      setAnalysis(selected.jdInsights);
+      setAnalysisError(null);
+      return;
+    }
     void runAnalysis(selected.jdText);
   }
 
@@ -666,13 +674,25 @@ export function CoverLetterForm() {
                   />
                   <label htmlFor="renameRole">Role</label>
                   <input id="renameRole" value={renameRole} onChange={(event) => setRenameRole(event.target.value)} />
-                  <button type="button" onClick={() => void handleRenameSelectedJob()}>
-                    Rename Selected JD
-                  </button>
-                  <button type="button" onClick={() => void handleDeleteSelectedJob()}>
-                    Delete Selected JD
-                  </button>
+                  <div className="noteActionRow">
+                    <button type="button" className="compactButton" onClick={() => void handleRenameSelectedJob()}>
+                      Rename Selected JD
+                    </button>
+                    <button
+                      type="button"
+                      className="compactButton dangerButton"
+                      onClick={() => void handleDeleteSelectedJob()}
+                    >
+                      Delete Selected JD
+                    </button>
+                  </div>
                   <label htmlFor="applicationStage">Application Stage</label>
+                  <p className="small">
+                    Current Stage:{" "}
+                    <span className={`stageBadge stage-${selectedApplicationStage}`}>
+                      {APPLICATION_STAGE_LABELS[selectedApplicationStage]}
+                    </span>
+                  </p>
                   <div className="buttonRow">
                     <select
                       id="applicationStage"
@@ -720,12 +740,28 @@ export function CoverLetterForm() {
                     <ul>
                       {applicationNotes.map((note) => (
                         <li key={note.id}>
-                          <div className="small">
-                            <strong>{APPLICATION_STAGE_LABELS[note.stage]}</strong> |{" "}
-                            {new Date(note.createdAt).toLocaleString()}
-                            {note.updatedAt !== note.createdAt
-                              ? ` (edited ${new Date(note.updatedAt).toLocaleString()})`
-                              : ""}
+                          <div className="small noteMeta">
+                            <div>
+                              <span className={`stageBadge stage-${note.stage}`}>{APPLICATION_STAGE_LABELS[note.stage]}</span>{" "}
+                              {new Date(note.createdAt).toLocaleString()}
+                              {note.updatedAt !== note.createdAt
+                                ? ` (edited ${new Date(note.updatedAt).toLocaleString()})`
+                                : ""}
+                            </div>
+                            {editingNoteId !== note.id ? (
+                              <div className="noteMetaActions">
+                                <button type="button" className="softActionButton" onClick={() => startEditingNote(note)}>
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  className="softActionButton softDangerButton"
+                                  onClick={() => void handleDeleteNote(note.id)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                           {editingNoteId === note.id ? (
                             <div className="stack">
@@ -743,11 +779,11 @@ export function CoverLetterForm() {
                                 value={editingNoteContent}
                                 onChange={(event) => setEditingNoteContent(event.target.value)}
                               />
-                              <div className="buttonRow">
-                                <button type="button" onClick={() => void handleSaveEditedNote(note.id)}>
+                              <div className="noteActionRow">
+                                <button type="button" className="compactButton" onClick={() => void handleSaveEditedNote(note.id)}>
                                   Save Note
                                 </button>
-                                <button type="button" onClick={cancelEditingNote}>
+                                <button type="button" className="compactButton" onClick={cancelEditingNote}>
                                   Cancel
                                 </button>
                               </div>
@@ -755,14 +791,6 @@ export function CoverLetterForm() {
                           ) : (
                             <>
                               <pre className="output">{note.content}</pre>
-                              <div className="buttonRow">
-                                <button type="button" onClick={() => startEditingNote(note)}>
-                                  Edit Note
-                                </button>
-                                <button type="button" onClick={() => void handleDeleteNote(note.id)}>
-                                  Delete Note
-                                </button>
-                              </div>
                             </>
                           )}
                         </li>
@@ -770,13 +798,6 @@ export function CoverLetterForm() {
                     </ul>
                   )}
                 </>
-              ) : null}
-              {selectedQuestionBankId ? (
-                <p className="small">
-                  JD Preview:{" "}
-                  {savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId)?.jdPreview}
-                  ...
-                </p>
               ) : null}
             </>
           )}
