@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
+import { ApplicationStageSchema } from "@/lib/application/stages";
 import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 
 const JobRenameSchema = z.object({
-  company: z.string().trim().min(1).max(120),
-  title: z.string().trim().min(1).max(120),
-});
+  company: z.string().trim().min(1).max(120).optional(),
+  title: z.string().trim().min(1).max(120).optional(),
+  applicationStage: ApplicationStageSchema.optional(),
+})
+  .refine(
+    (data) => Boolean(data.company?.trim() || data.title?.trim() || data.applicationStage),
+    "Provide at least one field to update.",
+  );
 
 function parseId(params: { id: string }): number | null {
   const id = Number(params.id);
@@ -41,7 +47,11 @@ export async function PATCH(request: Request, { params }: JobRouteContext) {
 
     const updated = await prisma.job.updateMany({
       where: { id, userId: auth.userId },
-      data: { company: parsed.data.company, title: parsed.data.title },
+      data: {
+        ...(parsed.data.company ? { company: parsed.data.company } : {}),
+        ...(parsed.data.title ? { title: parsed.data.title } : {}),
+        ...(parsed.data.applicationStage ? { applicationStage: parsed.data.applicationStage } : {}),
+      },
     });
     if (!updated.count) {
       return NextResponse.json({ error: "Job not found." }, { status: 404 });
@@ -49,7 +59,7 @@ export async function PATCH(request: Request, { params }: JobRouteContext) {
 
     const job = await prisma.job.findUnique({
       where: { id },
-      select: { id: true, company: true, title: true },
+      select: { id: true, company: true, title: true, applicationStage: true },
     });
     if (!job) {
       return NextResponse.json({ error: "Job not found." }, { status: 404 });

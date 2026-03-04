@@ -8,14 +8,16 @@ datasource db {
 }
 
 model Job {
-  id         Int        @id @default(autoincrement())
-  createdAt  DateTime   @default(now())
-  title      String?
-  company    String?
-  jdText     String
-  artifacts  Artifact[]
-  userId     Int
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               Int        @id @default(autoincrement())
+  createdAt        DateTime   @default(now())
+  title            String?
+  company          String?
+  jdText           String
+  applicationStage String     @default("exploring")
+  artifacts        Artifact[]
+  notes            JobNote[]
+  userId           Int
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -80,4 +82,17 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model JobNote {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stage     String
+  content   String
+  jobId     Int
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([createdAt])
 }

@@ -16,6 +16,8 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `POST /api/jd-analyze`
   - `POST /api/jd-extract`
   - `PATCH/DELETE /api/jobs/:id`
+  - `GET/POST /api/jobs/:id/notes`
+  - `PUT/DELETE /api/jobs/:id/notes/:noteId`
   - `GET/PUT /api/profile`
   - `POST /api/profile/import/resume`
   - `POST /api/profile/resume/analyze`
@@ -26,7 +28,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
 - OpenAI wrapper in `src/lib/openai/client.ts`
 - Prompt template in `src/lib/prompts/coverLetter.ts`
 - Zod request validation
-- Prisma + SQLite persistence (`User`, `Session`, `Job`, `Artifact`, `CandidateProfile`, `Story`)
+- Prisma + SQLite persistence (`User`, `Session`, `Job`, `JobNote`, `Artifact`, `CandidateProfile`, `Story`)
 - Auth routes:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -85,6 +87,7 @@ Open: `http://localhost:3000`
 9. Saved JD labels can be manually renamed as `Company - Role` from the selector panel.
 10. If a protected job page cannot be extracted (common on some LinkedIn views), paste the JD text directly.
 11. Use the `Job URL` input and `Extract JD from URL` to populate the JD textbox before analysis.
+12. For each saved JD, set an application stage and add timestamped notes (create/edit/delete) tied to that stage.
 
 ## Resume Import + AI Edits
 1. Open `/profile/import`.

@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ClipboardEvent, type FormEvent } from "react";
+import {
+  APPLICATION_STAGES,
+  APPLICATION_STAGE_LABELS,
+  type ApplicationStage,
+} from "@/lib/application/stageConstants";
 
 type HistoryItem = {
   id: number;
@@ -27,6 +32,15 @@ type SavedQuestionBank = {
   displayName: string;
   jdPreview: string;
   jdText: string;
+  applicationStage: ApplicationStage;
+};
+
+type JobNote = {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  stage: ApplicationStage;
+  content: string;
 };
 
 function looksLikeUrl(value: string): boolean {
@@ -69,10 +83,25 @@ export function CoverLetterForm() {
   const [selectedQuestionBankId, setSelectedQuestionBankId] = useState<number | null>(null);
   const [renameCompany, setRenameCompany] = useState("");
   const [renameRole, setRenameRole] = useState("");
+  const [selectedApplicationStage, setSelectedApplicationStage] = useState<ApplicationStage>("exploring");
+  const [applicationNotes, setApplicationNotes] = useState<JobNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteStageDraft, setNoteStageDraft] = useState<ApplicationStage>("exploring");
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [editingNoteStage, setEditingNoteStage] = useState<ApplicationStage>("exploring");
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [isSavingStage, setIsSavingStage] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const [analysis, setAnalysis] = useState<JdAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  function getSelectedQuestionBank(): SavedQuestionBank | undefined {
+    if (!selectedQuestionBankId) return undefined;
+    return savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+  }
 
   async function loadHistory() {
     try {
@@ -99,6 +128,25 @@ export function CoverLetterForm() {
     }
   }
 
+  async function loadApplicationNotes(jobId: number) {
+    setIsLoadingNotes(true);
+    setQuestionBankError(null);
+
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/notes`, { method: "GET" });
+      const payload = (await response.json()) as { notes?: JobNote[]; error?: string };
+      if (!response.ok || !payload.notes) {
+        throw new Error(payload.error ?? "Failed to load application notes.");
+      }
+
+      setApplicationNotes(payload.notes);
+    } catch (noteLoadError) {
+      setQuestionBankError(getErrorMessage(noteLoadError, "Failed to load application notes."));
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  }
+
   useEffect(() => {
     void loadHistory();
     void loadQuestionBankHistory();
@@ -108,6 +156,12 @@ export function CoverLetterForm() {
     if (!selectedQuestionBankId) {
       setRenameCompany("");
       setRenameRole("");
+      setSelectedApplicationStage("exploring");
+      setNoteStageDraft("exploring");
+      setApplicationNotes([]);
+      setEditingNoteId(null);
+      setEditingNoteContent("");
+      setEditingNoteStage("exploring");
       return;
     }
 
@@ -118,6 +172,9 @@ export function CoverLetterForm() {
 
     setRenameCompany(selected.company);
     setRenameRole(selected.roleTitle);
+    setSelectedApplicationStage(selected.applicationStage);
+    setNoteStageDraft(selected.applicationStage);
+    void loadApplicationNotes(selected.jobId);
   }, [savedQuestionBanks, selectedQuestionBankId]);
 
   async function runAnalysis(text: string) {
@@ -255,11 +312,7 @@ export function CoverLetterForm() {
   }
 
   function handleLoadSavedQuestionBank() {
-    if (!selectedQuestionBankId) {
-      return;
-    }
-
-    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    const selected = getSelectedQuestionBank();
     if (!selected) {
       return;
     }
@@ -270,11 +323,7 @@ export function CoverLetterForm() {
   }
 
   async function handleRenameSelectedJob() {
-    if (!selectedQuestionBankId) {
-      return;
-    }
-
-    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    const selected = getSelectedQuestionBank();
     if (!selected) {
       return;
     }
@@ -321,11 +370,7 @@ export function CoverLetterForm() {
   }
 
   async function handleDeleteSelectedJob() {
-    if (!selectedQuestionBankId) {
-      return;
-    }
-
-    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    const selected = getSelectedQuestionBank();
     if (!selected) {
       return;
     }
@@ -346,8 +391,173 @@ export function CoverLetterForm() {
       setRenameCompany("");
       setRenameRole("");
       setQuestionBankMarkdown("");
+      setApplicationNotes([]);
+      setNoteDraft("");
+      setEditingNoteId(null);
+      setEditingNoteContent("");
     } catch (deleteError) {
       setQuestionBankError(getErrorMessage(deleteError, "Failed to delete saved JD."));
+    }
+  }
+
+  async function handleUpdateApplicationStage() {
+    const selected = getSelectedQuestionBank();
+    if (!selected) {
+      return;
+    }
+
+    setQuestionBankError(null);
+    setIsSavingStage(true);
+
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ applicationStage: selectedApplicationStage }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        job?: { applicationStage?: ApplicationStage };
+      };
+
+      if (!response.ok) {
+        setQuestionBankError(payload.error ?? "Failed to update application stage.");
+        return;
+      }
+
+      const resolvedStage = payload.job?.applicationStage ?? selectedApplicationStage;
+      setSavedQuestionBanks((current) =>
+        current.map((item) =>
+          item.jobId === selected.jobId
+            ? {
+                ...item,
+                applicationStage: resolvedStage,
+              }
+            : item,
+        ),
+      );
+      setNoteStageDraft(resolvedStage);
+    } catch (stageError) {
+      setQuestionBankError(getErrorMessage(stageError, "Failed to update application stage."));
+    } finally {
+      setIsSavingStage(false);
+    }
+  }
+
+  async function handleCreateNote() {
+    const selected = getSelectedQuestionBank();
+    if (!selected) return;
+
+    const content = noteDraft.trim();
+    if (!content) {
+      setQuestionBankError("Note content is required.");
+      return;
+    }
+
+    setQuestionBankError(null);
+    setIsSavingNote(true);
+
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, stage: noteStageDraft }),
+      });
+      const payload = (await response.json()) as { error?: string; note?: JobNote };
+      if (!response.ok || !payload.note) {
+        setQuestionBankError(payload.error ?? "Failed to add note.");
+        return;
+      }
+
+      const createdNote = payload.note;
+      if (!createdNote) {
+        setQuestionBankError("Failed to add note.");
+        return;
+      }
+
+      setApplicationNotes((current) => [createdNote, ...current]);
+      setNoteDraft("");
+    } catch (noteError) {
+      setQuestionBankError(getErrorMessage(noteError, "Failed to add note."));
+    } finally {
+      setIsSavingNote(false);
+    }
+  }
+
+  function startEditingNote(note: JobNote) {
+    setEditingNoteId(note.id);
+    setEditingNoteContent(note.content);
+    setEditingNoteStage(note.stage);
+  }
+
+  function cancelEditingNote() {
+    setEditingNoteId(null);
+    setEditingNoteContent("");
+    setEditingNoteStage("exploring");
+  }
+
+  async function handleSaveEditedNote(noteId: number) {
+    const selected = getSelectedQuestionBank();
+    if (!selected) return;
+
+    const content = editingNoteContent.trim();
+    if (!content) {
+      setQuestionBankError("Note content is required.");
+      return;
+    }
+
+    setQuestionBankError(null);
+    setIsSavingNote(true);
+
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, stage: editingNoteStage }),
+      });
+      const payload = (await response.json()) as { error?: string; note?: JobNote };
+      if (!response.ok || !payload.note) {
+        setQuestionBankError(payload.error ?? "Failed to update note.");
+        return;
+      }
+
+      const updatedNote = payload.note;
+      if (!updatedNote) {
+        setQuestionBankError("Failed to update note.");
+        return;
+      }
+
+      setApplicationNotes((current) => current.map((item) => (item.id === noteId ? updatedNote : item)));
+      cancelEditingNote();
+    } catch (noteError) {
+      setQuestionBankError(getErrorMessage(noteError, "Failed to update note."));
+    } finally {
+      setIsSavingNote(false);
+    }
+  }
+
+  async function handleDeleteNote(noteId: number) {
+    const selected = getSelectedQuestionBank();
+    if (!selected) return;
+
+    setQuestionBankError(null);
+
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}/notes/${noteId}`, { method: "DELETE" });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setQuestionBankError(payload.error ?? "Failed to delete note.");
+        return;
+      }
+
+      setApplicationNotes((current) => current.filter((item) => item.id !== noteId));
+      if (editingNoteId === noteId) {
+        cancelEditingNote();
+      }
+    } catch (noteError) {
+      setQuestionBankError(getErrorMessage(noteError, "Failed to delete note."));
     }
   }
 
@@ -438,7 +648,8 @@ export function CoverLetterForm() {
                 <option value="">Choose one...</option>
                 {savedQuestionBanks.map((item) => (
                   <option key={item.artifactId} value={item.artifactId}>
-                    {item.displayName} - {new Date(item.createdAt).toLocaleString()}
+                    [{APPLICATION_STAGE_LABELS[item.applicationStage]}] {item.displayName} -{" "}
+                    {new Date(item.createdAt).toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -461,6 +672,103 @@ export function CoverLetterForm() {
                   <button type="button" onClick={() => void handleDeleteSelectedJob()}>
                     Delete Selected JD
                   </button>
+                  <label htmlFor="applicationStage">Application Stage</label>
+                  <div className="buttonRow">
+                    <select
+                      id="applicationStage"
+                      value={selectedApplicationStage}
+                      onChange={(event) => setSelectedApplicationStage(event.target.value as ApplicationStage)}
+                    >
+                      {APPLICATION_STAGES.map((stage) => (
+                        <option key={stage} value={stage}>
+                          {APPLICATION_STAGE_LABELS[stage]}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => void handleUpdateApplicationStage()} disabled={isSavingStage}>
+                      {isSavingStage ? "Saving Stage..." : "Save Stage"}
+                    </button>
+                  </div>
+                  <h3>Application Notes</h3>
+                  <label htmlFor="noteStage">Stage for New Note</label>
+                  <select
+                    id="noteStage"
+                    value={noteStageDraft}
+                    onChange={(event) => setNoteStageDraft(event.target.value as ApplicationStage)}
+                  >
+                    {APPLICATION_STAGES.map((stage) => (
+                      <option key={stage} value={stage}>
+                        {APPLICATION_STAGE_LABELS[stage]}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="noteDraft">New Note (Markdown or plain text)</label>
+                  <textarea
+                    id="noteDraft"
+                    value={noteDraft}
+                    onChange={(event) => setNoteDraft(event.target.value)}
+                    placeholder="Add what happened in this stage, follow-ups, outcomes, or next steps..."
+                  />
+                  <button type="button" onClick={() => void handleCreateNote()} disabled={isSavingNote}>
+                    {isSavingNote ? "Saving Note..." : "Add Note"}
+                  </button>
+                  {isLoadingNotes ? (
+                    <p className="small">Loading notes...</p>
+                  ) : applicationNotes.length === 0 ? (
+                    <p className="small">No notes yet for this application.</p>
+                  ) : (
+                    <ul>
+                      {applicationNotes.map((note) => (
+                        <li key={note.id}>
+                          <div className="small">
+                            <strong>{APPLICATION_STAGE_LABELS[note.stage]}</strong> |{" "}
+                            {new Date(note.createdAt).toLocaleString()}
+                            {note.updatedAt !== note.createdAt
+                              ? ` (edited ${new Date(note.updatedAt).toLocaleString()})`
+                              : ""}
+                          </div>
+                          {editingNoteId === note.id ? (
+                            <div className="stack">
+                              <select
+                                value={editingNoteStage}
+                                onChange={(event) => setEditingNoteStage(event.target.value as ApplicationStage)}
+                              >
+                                {APPLICATION_STAGES.map((stage) => (
+                                  <option key={stage} value={stage}>
+                                    {APPLICATION_STAGE_LABELS[stage]}
+                                  </option>
+                                ))}
+                              </select>
+                              <textarea
+                                value={editingNoteContent}
+                                onChange={(event) => setEditingNoteContent(event.target.value)}
+                              />
+                              <div className="buttonRow">
+                                <button type="button" onClick={() => void handleSaveEditedNote(note.id)}>
+                                  Save Note
+                                </button>
+                                <button type="button" onClick={cancelEditingNote}>
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <pre className="output">{note.content}</pre>
+                              <div className="buttonRow">
+                                <button type="button" onClick={() => startEditingNote(note)}>
+                                  Edit Note
+                                </button>
+                                <button type="button" onClick={() => void handleDeleteNote(note.id)}>
+                                  Delete Note
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </>
               ) : null}
               {selectedQuestionBankId ? (
