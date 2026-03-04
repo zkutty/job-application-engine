@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { LogoutButton } from "@/components/logout-button";
 
 export const metadata: Metadata = {
   title: "Job Application Engine",
@@ -21,6 +22,8 @@ export default function RootLayout({
             <Link href="/profile">Profile</Link>
             <Link href="/profile/import">Import Profile</Link>
             <Link href="/stories">Stories</Link>
+            <Link href="/login">Login</Link>
+            <LogoutButton />
           </nav>
         </header>
         {children}

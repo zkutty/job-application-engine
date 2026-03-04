@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 import { analyzeJd } from "@/lib/jd/analyze";
 import { generateCoverLetter } from "@/lib/openai/client";
@@ -26,6 +27,9 @@ function storyResultWithPlaceholder(result: string): string {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = (await request.json()) as unknown;
     const parsed = CoverLetterInputSchema.safeParse(body);
@@ -38,8 +42,8 @@ export async function POST(request: Request) {
     }
 
     const [profile, stories, jdSignals] = await Promise.all([
-      prisma.candidateProfile.findFirst({ orderBy: { id: "asc" } }),
-      prisma.story.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.candidateProfile.findFirst({ where: { userId: auth.userId } }),
+      prisma.story.findMany({ where: { userId: auth.userId }, orderBy: { createdAt: "desc" } }),
       analyzeJd(parsed.data.jobDescription),
     ]);
 
@@ -97,6 +101,7 @@ export async function POST(request: Request) {
         jdText: parsed.data.jobDescription,
         company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
+        userId: auth.userId,
         artifacts: {
           create: {
             type: "cover_letter",

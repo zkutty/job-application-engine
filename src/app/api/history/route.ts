@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 
+import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const history = await prisma.artifact.findMany({
-      where: { type: "cover_letter" },
+      where: { type: "cover_letter", job: { userId: auth.userId } },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
