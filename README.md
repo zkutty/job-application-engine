@@ -14,6 +14,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `GET /api/question-bank`
   - `GET /api/history`
   - `POST /api/jd-analyze`
+  - `PATCH /api/jobs/:id`
   - `GET/PUT /api/profile`
   - `POST /api/profile/import/resume`
   - `POST /api/profile/resume/analyze`
@@ -72,6 +73,7 @@ Open: `http://localhost:3000`
 6. Cover letter generation includes profile summary and top 2 JD-matched stories.
 7. Question Bank generation creates markdown Q&A and supports export.
 8. Saved question banks can be reloaded later by role/JD from the home page selector.
+9. Saved JD labels can be manually renamed as `Company - Role` from the selector panel.
 
 ## Resume Import + AI Edits
 1. Open `/profile/import`.

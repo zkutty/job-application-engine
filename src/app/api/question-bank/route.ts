@@ -38,6 +38,7 @@ export async function GET() {
         job: {
           select: {
             id: true,
+            company: true,
             title: true,
             jdText: true,
           },
@@ -52,7 +53,9 @@ export async function GET() {
           createdAt: artifact.createdAt,
           markdown: artifact.content,
           jobId: artifact.job.id,
+          company: artifact.job.company ?? "Unknown Company",
           roleTitle: artifact.job.title ?? "Untitled Role",
+          displayName: `${artifact.job.company ?? "Unknown Company"} - ${artifact.job.title ?? "Untitled Role"}`,
           jdPreview: artifact.job.jdText.slice(0, 120),
           jdText: artifact.job.jdText,
         })),
@@ -115,6 +118,7 @@ export async function POST(request: Request) {
     const record = await prisma.job.create({
       data: {
         jdText: parsed.data.jobDescription,
+        company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
         artifacts: {
           create: {
@@ -136,6 +140,7 @@ export async function POST(request: Request) {
       {
         markdown,
         questionBank,
+        company: jdSignals.companyGuess,
         roleTitle: jdSignals.roleTitleGuess,
         artifactId: record.artifacts[0]?.id,
         createdAt: record.artifacts[0]?.createdAt,

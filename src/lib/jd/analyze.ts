@@ -21,6 +21,7 @@ function normalizeList(items: string[], max: number): string[] {
 
 function normalizeAnalysis(data: JdAnalysis): JdAnalysis {
   return {
+    companyGuess: data.companyGuess.trim(),
     roleTitleGuess: data.roleTitleGuess.trim(),
     seniorityGuess: data.seniorityGuess.trim(),
     competencies: normalizeList(data.competencies, 8),
@@ -46,6 +47,7 @@ export async function analyzeJd(jdText: string): Promise<JdAnalysis> {
           type: "object",
           additionalProperties: false,
           properties: {
+            companyGuess: { type: "string" },
             roleTitleGuess: { type: "string" },
             seniorityGuess: { type: "string" },
             competencies: {
@@ -64,7 +66,14 @@ export async function analyzeJd(jdText: string): Promise<JdAnalysis> {
               maxItems: 10,
             },
           },
-          required: ["roleTitleGuess", "seniorityGuess", "competencies", "keywords", "tools"],
+          required: [
+            "companyGuess",
+            "roleTitleGuess",
+            "seniorityGuess",
+            "competencies",
+            "keywords",
+            "tools",
+          ],
         },
       },
     },
@@ -77,7 +86,8 @@ export async function analyzeJd(jdText: string): Promise<JdAnalysis> {
       {
         role: "user",
         content: [
-          "Analyze the following job description and extract role title, seniority, competencies, keywords, and tools.",
+          "Analyze the following job description and extract company, role title, seniority, competencies, keywords, and tools.",
+          "Set companyGuess to the employer name if present, otherwise return Unknown Company.",
           "Prefer concise phrases and avoid duplicates.",
           "",
           parsedInput.jdText,
