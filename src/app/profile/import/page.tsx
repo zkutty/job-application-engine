@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 
 type ImportedProfile = {
   name: string;
@@ -36,6 +36,7 @@ const defaultVoiceGuidelines =
 
 export default function ProfileImportPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [targetRole, setTargetRole] = useState("");
   const [importedProfile, setImportedProfile] = useState<ImportedProfile>(emptyImportedProfile);
   const [rawResumeText, setRawResumeText] = useState("");
@@ -46,9 +47,39 @@ export default function ProfileImportPage() {
   const [loading, setLoading] = useState(false);
   const rewrittenWordCount = rewrittenResume.trim() ? rewrittenResume.trim().split(/\s+/).length : 0;
 
+  function chooseFile(candidate: File | null) {
+    if (!candidate) {
+      return;
+    }
+
+    const isPdf = candidate.type === "application/pdf" || candidate.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      setStatus("Only PDF files are supported.");
+      return;
+    }
+
+    setFile(candidate);
+    setStatus(`Ready to import: ${candidate.name}`);
+  }
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files?.[0] ?? null;
-    setFile(selected);
+    chooseFile(event.target.files?.[0] ?? null);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(false);
+    chooseFile(event.dataTransfer.files?.[0] ?? null);
   }
 
   async function handleImport(event: FormEvent<HTMLFormElement>) {
@@ -178,6 +209,42 @@ export default function ProfileImportPage() {
     }
   }
 
+  async function handleUpdateProfileFromUpdatedResume() {
+    if (!(rewrittenResume || rawResumeText)) {
+      setStatus("No resume text available to parse.");
+      return;
+    }
+
+    setLoading(true);
+    setStatus("Updating profile fields from latest resume text...");
+
+    try {
+      const response = await fetch("/api/profile/resume/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rawResumeText: rewrittenResume || rawResumeText,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        parsedProfile?: ImportedProfile;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.parsedProfile) {
+        throw new Error(payload.error ?? "Failed to update profile from resume.");
+      }
+
+      setImportedProfile(payload.parsedProfile);
+      setStatus("Profile fields refreshed from updated resume text.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Failed to update profile from resume.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleDownloadDocx() {
     const resumeText = rewrittenResume || rawResumeText;
     if (!resumeText) {
@@ -234,8 +301,23 @@ export default function ProfileImportPage() {
   return (
     <main>
       <section className="card stack">
-        <h1>Import Profile from Resume</h1>
+        <h1>1. Upload Resume</h1>
         <form onSubmit={handleImport} className="stack">
+          <div
+            className="card"
+            style={{
+              borderStyle: "dashed",
+              borderWidth: "2px",
+              borderColor: isDragActive ? "#111827" : "#9ca3af",
+              background: isDragActive ? "#f3f4f6" : "transparent",
+            }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <p>{file ? `Selected: ${file.name}` : "Drag and drop your PDF resume here."}</p>
+            <p className="small">Or use the file picker below.</p>
+          </div>
           <input type="file" accept="application/pdf,.pdf" onChange={handleFileChange} />
           <label>
             Target Role (optional)
@@ -248,52 +330,12 @@ export default function ProfileImportPage() {
           <button type="submit" disabled={loading}>
             {loading ? "Importing..." : "Import Resume PDF"}
           </button>
-          <button type="button" disabled={loading} onClick={() => void handleEnhanceResume()}>
-            Run AI Resume Edits
-          </button>
-          <button type="button" disabled={loading} onClick={() => void handleDownloadDocx()}>
-            Download Resume DOCX
-          </button>
         </form>
         <p className="small">{status}</p>
       </section>
 
       <section className="card stack">
-        <h2>Top Feedback</h2>
-        {topFeedback.length ? (
-          <ul className="stack">
-            {topFeedback.map((item) => (
-              <li key={`${item.feedback}-${item.reason}`}>
-                <strong>{item.feedback}</strong>
-                <br />
-                <span className="small">{item.reason}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="small">Run AI edits to generate top feedback.</p>
-        )}
-      </section>
-
-      <section className="card stack">
-        <h2>Rewrite Plan (What + Why)</h2>
-        {rewritePlan.length ? (
-          <ul className="stack">
-            {rewritePlan.map((item) => (
-              <li key={`${item.section}-${item.rewriteDirection}`}>
-                <strong>{item.section}</strong>: {item.rewriteDirection}
-                <br />
-                <span className="small">Why: {item.why}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="small">Run AI edits to generate section-by-section rewrite guidance.</p>
-        )}
-      </section>
-
-      <section className="card stack">
-        <h2>Review Imported Profile</h2>
+        <h2>2. Review Imported Profile</h2>
         <label>
           Name
           <input
@@ -350,13 +392,45 @@ export default function ProfileImportPage() {
             }}
           />
         </label>
-        <button type="button" disabled={loading} onClick={() => void handleSave()}>
-          Save Final Profile
-        </button>
       </section>
 
       <section className="card stack">
-        <h2>Rewritten Resume Text</h2>
+        <h2>3. Run AI Resume Edits</h2>
+        <button type="button" disabled={loading} onClick={() => void handleEnhanceResume()}>
+          Run AI Resume Edits
+        </button>
+        <h3>Top Feedback</h3>
+        {topFeedback.length ? (
+          <ul className="stack">
+            {topFeedback.map((item) => (
+              <li key={`${item.feedback}-${item.reason}`}>
+                <strong>{item.feedback}</strong>
+                <br />
+                <span className="small">{item.reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="small">Run AI edits to generate top feedback.</p>
+        )}
+        <h3>Rewrite Plan (What + Why)</h3>
+        {rewritePlan.length ? (
+          <ul className="stack">
+            {rewritePlan.map((item) => (
+              <li key={`${item.section}-${item.rewriteDirection}`}>
+                <strong>{item.section}</strong>: {item.rewriteDirection}
+                <br />
+                <span className="small">Why: {item.why}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="small">Run AI edits to generate section-by-section rewrite guidance.</p>
+        )}
+      </section>
+
+      <section className="card stack">
+        <h2>4. Updated Resume Text</h2>
         <p className="small">
           Word count: {rewrittenWordCount}. One-page target: roughly 420-650 words on US Letter (11pt).
         </p>
@@ -365,6 +439,26 @@ export default function ProfileImportPage() {
           onChange={(e) => setRewrittenResume(e.target.value)}
           placeholder="AI rewritten resume will appear here."
         />
+      </section>
+
+      <section className="card stack">
+        <h2>4.5 Sync + Save Final Profile</h2>
+        <p className="small">
+          If you edited the resume text above, refresh profile fields from that latest text before saving.
+        </p>
+        <button type="button" disabled={loading} onClick={() => void handleUpdateProfileFromUpdatedResume()}>
+          Update Profile From Updated Resume
+        </button>
+        <button type="button" disabled={loading} onClick={() => void handleSave()}>
+          Save Final Profile
+        </button>
+      </section>
+
+      <section className="card stack">
+        <h2>5. Download Resume</h2>
+        <button type="button" disabled={loading} onClick={() => void handleDownloadDocx()}>
+          Download Resume DOCX
+        </button>
       </section>
     </main>
   );
