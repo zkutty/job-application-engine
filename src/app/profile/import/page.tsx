@@ -11,6 +11,17 @@ type ImportedProfile = {
   metricsInventory: string[];
 };
 
+type TopFeedbackItem = {
+  feedback: string;
+  reason: string;
+};
+
+type RewritePlanItem = {
+  section: string;
+  rewriteDirection: string;
+  why: string;
+};
+
 const emptyImportedProfile: ImportedProfile = {
   name: "",
   headline: "",
@@ -29,9 +40,11 @@ export default function ProfileImportPage() {
   const [importedProfile, setImportedProfile] = useState<ImportedProfile>(emptyImportedProfile);
   const [rawResumeText, setRawResumeText] = useState("");
   const [rewrittenResume, setRewrittenResume] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [topFeedback, setTopFeedback] = useState<TopFeedbackItem[]>([]);
+  const [rewritePlan, setRewritePlan] = useState<RewritePlanItem[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const rewrittenWordCount = rewrittenResume.trim() ? rewrittenResume.trim().split(/\s+/).length : 0;
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
@@ -70,7 +83,8 @@ export default function ProfileImportPage() {
       setImportedProfile(payload.parsedProfile);
       setRawResumeText(payload.rawResumeText);
       setRewrittenResume(payload.rawResumeText);
-      setSuggestions([]);
+      setTopFeedback([]);
+      setRewritePlan([]);
       setStatus("Imported. Review and save.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Failed to import resume.");
@@ -135,17 +149,25 @@ export default function ProfileImportPage() {
       });
 
       const payload = (await response.json()) as {
-        suggestions?: string[];
+        topFeedback?: TopFeedbackItem[];
+        rewritePlan?: RewritePlanItem[];
         rewrittenResume?: string;
         parsedProfile?: ImportedProfile;
         error?: string;
       };
 
-      if (!response.ok || !payload.rewrittenResume || !payload.parsedProfile || !payload.suggestions) {
+      if (
+        !response.ok ||
+        !payload.rewrittenResume ||
+        !payload.parsedProfile ||
+        !payload.topFeedback ||
+        !payload.rewritePlan
+      ) {
         throw new Error(payload.error ?? "Failed to enhance resume.");
       }
 
-      setSuggestions(payload.suggestions);
+      setTopFeedback(payload.topFeedback);
+      setRewritePlan(payload.rewritePlan);
       setRewrittenResume(payload.rewrittenResume);
       setImportedProfile(payload.parsedProfile);
       setStatus("Resume updated with AI suggestions.");
@@ -156,7 +178,7 @@ export default function ProfileImportPage() {
     }
   }
 
-  async function handleDownloadRtf() {
+  async function handleDownloadHtml() {
     const resumeText = rewrittenResume || rawResumeText;
     if (!resumeText) {
       setStatus("No resume text available to export.");
@@ -185,13 +207,13 @@ export default function ProfileImportPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${(importedProfile.name || "candidate").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-resume.rtf`;
+      anchor.download = `${(importedProfile.name || "candidate").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-resume.html`;
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
 
-      setStatus("Downloaded .rtf. Upload it to Google Drive and open with Google Docs.");
+      setStatus("Downloaded .html resume. Open in browser or paste into Word/Docs.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Failed to export resume.");
     } finally {
@@ -219,23 +241,44 @@ export default function ProfileImportPage() {
           <button type="button" disabled={loading} onClick={() => void handleEnhanceResume()}>
             Run AI Resume Edits
           </button>
-          <button type="button" disabled={loading} onClick={() => void handleDownloadRtf()}>
-            Download for Google Docs (.rtf)
+          <button type="button" disabled={loading} onClick={() => void handleDownloadHtml()}>
+            Download Resume HTML
           </button>
         </form>
         <p className="small">{status}</p>
       </section>
 
       <section className="card stack">
-        <h2>AI Edit Suggestions</h2>
-        {suggestions.length ? (
+        <h2>Top Feedback</h2>
+        {topFeedback.length ? (
           <ul className="stack">
-            {suggestions.map((suggestion) => (
-              <li key={suggestion}>{suggestion}</li>
+            {topFeedback.map((item) => (
+              <li key={`${item.feedback}-${item.reason}`}>
+                <strong>{item.feedback}</strong>
+                <br />
+                <span className="small">{item.reason}</span>
+              </li>
             ))}
           </ul>
         ) : (
-          <p className="small">Run AI edits to generate improvement suggestions.</p>
+          <p className="small">Run AI edits to generate top feedback.</p>
+        )}
+      </section>
+
+      <section className="card stack">
+        <h2>Rewrite Plan (What + Why)</h2>
+        {rewritePlan.length ? (
+          <ul className="stack">
+            {rewritePlan.map((item) => (
+              <li key={`${item.section}-${item.rewriteDirection}`}>
+                <strong>{item.section}</strong>: {item.rewriteDirection}
+                <br />
+                <span className="small">Why: {item.why}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="small">Run AI edits to generate section-by-section rewrite guidance.</p>
         )}
       </section>
 
@@ -304,6 +347,9 @@ export default function ProfileImportPage() {
 
       <section className="card stack">
         <h2>Rewritten Resume Text</h2>
+        <p className="small">
+          Word count: {rewrittenWordCount}. One-page target: roughly 420-650 words on US Letter (11pt).
+        </p>
         <textarea
           value={rewrittenResume}
           onChange={(e) => setRewrittenResume(e.target.value)}

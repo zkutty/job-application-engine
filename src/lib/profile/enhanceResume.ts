@@ -21,15 +21,38 @@ export async function enhanceResumeText(input: EnhanceResumeInput): Promise<Resu
           type: "object",
           additionalProperties: false,
           properties: {
-            suggestions: {
+            topFeedback: {
               type: "array",
-              items: { type: "string" },
+              minItems: 3,
+              maxItems: 6,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  feedback: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["feedback", "reason"],
+              },
+            },
+            rewritePlan: {
+              type: "array",
               minItems: 3,
               maxItems: 8,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  section: { type: "string" },
+                  rewriteDirection: { type: "string" },
+                  why: { type: "string" },
+                },
+                required: ["section", "rewriteDirection", "why"],
+              },
             },
             rewrittenResume: { type: "string" },
           },
-          required: ["suggestions", "rewrittenResume"],
+          required: ["topFeedback", "rewritePlan", "rewrittenResume"],
         },
       },
     },
@@ -38,9 +61,11 @@ export async function enhanceResumeText(input: EnhanceResumeInput): Promise<Resu
         role: "system",
         content: [
           "You are a resume editor.",
-          "Return concrete, high-impact suggestions and a rewritten resume.",
+          "Return top feedback, a concrete rewrite plan, and a rewritten resume.",
           "Never invent employers, dates, titles, or metrics.",
           "If a metric is missing, keep placeholders like [insert metric].",
+          "Optimize for one US letter page. Target roughly 420-650 words.",
+          "Use clear section headers and bullet points for experience impact.",
           "Keep rewritten text concise and professional.",
           "Return valid JSON only.",
         ].join(" "),

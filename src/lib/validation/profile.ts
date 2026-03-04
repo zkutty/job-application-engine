@@ -29,7 +29,25 @@ export const ResumeEnhancementRequestSchema = z.object({
 });
 
 export const ResumeEnhancementSchema = z.object({
-  suggestions: z.array(z.string().trim().min(1)).min(3).max(8),
+  topFeedback: z
+    .array(
+      z.object({
+        feedback: z.string().trim().min(1),
+        reason: z.string().trim().min(1),
+      }),
+    )
+    .min(3)
+    .max(6),
+  rewritePlan: z
+    .array(
+      z.object({
+        section: z.string().trim().min(1),
+        rewriteDirection: z.string().trim().min(1),
+        why: z.string().trim().min(1),
+      }),
+    )
+    .min(3)
+    .max(8),
   rewrittenResume: z.string().trim().min(120),
 });
 

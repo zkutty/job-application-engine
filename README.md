@@ -76,7 +76,7 @@ Open: `http://localhost:3000`
 3. Optionally add a target role and click `Run AI Resume Edits`.
 4. Review suggestions and rewritten resume text.
 5. Click `Save Final Profile` to store parsed profile data.
-6. Click `Download for Google Docs (.rtf)` and open it from Google Drive as a Google Doc.
+6. Click `Download Resume HTML` and open/paste the formatted content into Word or Google Docs.
 
 ## Available Scripts
 - `npm run dev` - start local dev server

@@ -21,7 +21,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        suggestions: enhanced.suggestions,
+        topFeedback: enhanced.topFeedback,
+        rewritePlan: enhanced.rewritePlan,
         rewrittenResume: enhanced.rewrittenResume,
         parsedProfile: rewrittenProfile,
       },

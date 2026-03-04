@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { buildResumeRtf } from "@/lib/profile/exportRtf";
+import { buildResumeHtml } from "@/lib/profile/exportHtml";
 
 const ResumeExportSchema = z.object({
   candidateName: z.string().trim().min(1).max(120),
@@ -20,14 +20,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const rtf = buildResumeRtf(parsed.data);
+    const html = buildResumeHtml(parsed.data);
     const safeName = parsed.data.candidateName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const fileName = `${safeName || "candidate"}-resume.rtf`;
+    const fileName = `${safeName || "candidate"}-resume.html`;
 
-    return new NextResponse(rtf, {
+    return new NextResponse(html, {
       status: 200,
       headers: {
-        "Content-Type": "application/rtf; charset=utf-8",
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Content-Type-Options": "nosniff",
         "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });

@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildResumeRtf } from "../src/lib/profile/exportRtf.ts";
+import { buildResumeHtml } from "../src/lib/profile/exportHtml.ts";
 import { ResumeEnhancementRequestSchema } from "../src/lib/validation/profile.ts";
 
-test("buildResumeRtf escapes control characters", () => {
-  const output = buildResumeRtf({
+test("buildResumeHtml escapes HTML special characters", () => {
+  const output = buildResumeHtml({
     candidateName: "Jane {Doe}",
-    resumeText: "Built \\ shipped platform\nImproved conversion by [insert metric]",
+    resumeText: "EXPERIENCE:\n- Built <platform> & shipped",
   });
 
-  assert.equal(output.includes("\\{Doe\\}"), true);
-  assert.equal(output.includes("\\\\ shipped"), true);
-  assert.equal(output.includes("\\line "), true);
+  assert.equal(output.includes("Jane {Doe} Resume"), true);
+  assert.equal(output.includes("&lt;platform&gt; &amp; shipped"), true);
+  assert.equal(output.includes("<h2>EXPERIENCE</h2>"), true);
 });
 
 test("ResumeEnhancementRequestSchema validates minimum resume length", () => {
