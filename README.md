@@ -15,7 +15,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `GET /api/history`
   - `POST /api/jd-analyze`
   - `POST /api/jd-extract`
-  - `PATCH /api/jobs/:id`
+  - `PATCH/DELETE /api/jobs/:id`
   - `GET/PUT /api/profile`
   - `POST /api/profile/import/resume`
   - `POST /api/profile/resume/analyze`

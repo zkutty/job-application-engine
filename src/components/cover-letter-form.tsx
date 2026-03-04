@@ -320,6 +320,37 @@ export function CoverLetterForm() {
     }
   }
 
+  async function handleDeleteSelectedJob() {
+    if (!selectedQuestionBankId) {
+      return;
+    }
+
+    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    if (!selected) {
+      return;
+    }
+
+    setQuestionBankError(null);
+
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}`, { method: "DELETE" });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setQuestionBankError(payload.error ?? "Failed to delete saved JD.");
+        return;
+      }
+
+      setSavedQuestionBanks((current) => current.filter((item) => item.jobId !== selected.jobId));
+      setSelectedQuestionBankId(null);
+      setRenameCompany("");
+      setRenameRole("");
+      setQuestionBankMarkdown("");
+    } catch (deleteError) {
+      setQuestionBankError(getErrorMessage(deleteError, "Failed to delete saved JD."));
+    }
+  }
+
   function exportQuestionBankMarkdown() {
     if (!questionBankMarkdown) {
       return;
@@ -426,6 +457,9 @@ export function CoverLetterForm() {
                   <input id="renameRole" value={renameRole} onChange={(event) => setRenameRole(event.target.value)} />
                   <button type="button" onClick={() => void handleRenameSelectedJob()}>
                     Rename Selected JD
+                  </button>
+                  <button type="button" onClick={() => void handleDeleteSelectedJob()}>
+                    Delete Selected JD
                   </button>
                 </>
               ) : null}

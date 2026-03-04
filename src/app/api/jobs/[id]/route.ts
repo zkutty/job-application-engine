@@ -64,3 +64,31 @@ export async function PATCH(request: Request, { params }: JobRouteContext) {
     return NextResponse.json({ error: "Failed to rename job." }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: JobRouteContext) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
+  const id = parseId(await params);
+  if (!id) {
+    return NextResponse.json({ error: "Invalid job id." }, { status: 400 });
+  }
+
+  try {
+    const deleted = await prisma.job.deleteMany({
+      where: { id, userId: auth.userId },
+    });
+
+    if (!deleted.count) {
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: "Failed to delete job." }, { status: 500 });
+  }
+}
