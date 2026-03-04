@@ -24,6 +24,9 @@ const emptyProfile: Profile = {
   rawResumeText: "",
 };
 
+const defaultVoiceGuidelines =
+  "Use concise, specific language grounded in the resume. Do not add unsupported metrics.";
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [status, setStatus] = useState<string>("");
@@ -43,13 +46,17 @@ export default function ProfilePage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("Saving...");
+    const voiceGuidelines = profile.voiceGuidelines.trim() || defaultVoiceGuidelines;
 
     const response = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profile),
+      body: JSON.stringify({ ...profile, voiceGuidelines }),
     });
 
+    if (voiceGuidelines !== profile.voiceGuidelines) {
+      setProfile({ ...profile, voiceGuidelines });
+    }
     setStatus(response.ok ? "Saved." : "Save failed.");
   }
 
