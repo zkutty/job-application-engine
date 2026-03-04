@@ -29,7 +29,33 @@ type SavedQuestionBank = {
   jdText: string;
 };
 
+function looksLikeUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  if (error instanceof Event) {
+    return fallback;
+  }
+  return fallback;
+}
+
 export function CoverLetterForm() {
+  const [jobUrlInput, setJobUrlInput] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [questionBankMarkdown, setQuestionBankMarkdown] = useState("");
@@ -37,6 +63,7 @@ export function CoverLetterForm() {
   const [questionBankError, setQuestionBankError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExtractingJd, setIsExtractingJd] = useState(false);
   const [isGeneratingQuestionBank, setIsGeneratingQuestionBank] = useState(false);
   const [savedQuestionBanks, setSavedQuestionBanks] = useState<SavedQuestionBank[]>([]);
   const [selectedQuestionBankId, setSelectedQuestionBankId] = useState<number | null>(null);
@@ -94,7 +121,8 @@ export function CoverLetterForm() {
   }, [savedQuestionBanks, selectedQuestionBankId]);
 
   async function runAnalysis(text: string) {
-    if (text.trim().length < 40) {
+    const trimmed = text.trim();
+    if (trimmed.length < 40 && !looksLikeUrl(trimmed)) {
       return;
     }
 
@@ -118,14 +146,49 @@ export function CoverLetterForm() {
 
       setAnalysis(payload.analysis);
     } catch (analyzeError) {
-      const message = analyzeError instanceof Error ? analyzeError.message : "Failed to analyze job description.";
-      setAnalysisError(message);
+      setAnalysisError(getErrorMessage(analyzeError, "Failed to analyze job description."));
     } finally {
       setIsAnalyzing(false);
     }
   }
 
+  async function extractAndPopulateJobDescription(input: string) {
+    setError(null);
+    setAnalysisError(null);
+    setIsExtractingJd(true);
+
+    try {
+      const response = await fetch("/api/jd-extract", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ input }),
+      });
+
+      const payload = (await response.json()) as { jobDescription?: string; error?: string };
+      if (!response.ok || !payload.jobDescription) {
+        throw new Error(payload.error ?? "Failed to extract job description from URL.");
+      }
+
+      setJobDescription(payload.jobDescription);
+      await runAnalysis(payload.jobDescription);
+    } catch (extractError) {
+      setError(getErrorMessage(extractError, "Failed to extract job description from URL."));
+    } finally {
+      setIsExtractingJd(false);
+    }
+  }
+
   function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = event.clipboardData.getData("text").trim();
+    if (looksLikeUrl(pasted)) {
+      event.preventDefault();
+      setJobUrlInput(pasted);
+      void extractAndPopulateJobDescription(pasted);
+      return;
+    }
+
     const textarea = event.currentTarget;
 
     window.setTimeout(() => {
@@ -156,9 +219,7 @@ export function CoverLetterForm() {
       setCoverLetter(payload.coverLetter);
       await loadHistory();
     } catch (submissionError) {
-      const message =
-        submissionError instanceof Error ? submissionError.message : "Failed to generate cover letter.";
-      setError(message);
+      setError(getErrorMessage(submissionError, "Failed to generate cover letter."));
     } finally {
       setIsLoading(false);
     }
@@ -187,9 +248,7 @@ export function CoverLetterForm() {
       await loadHistory();
       await loadQuestionBankHistory();
     } catch (generationError) {
-      const message =
-        generationError instanceof Error ? generationError.message : "Failed to generate question bank.";
-      setQuestionBankError(message);
+      setQuestionBankError(getErrorMessage(generationError, "Failed to generate question bank."));
     } finally {
       setIsGeneratingQuestionBank(false);
     }
@@ -229,32 +288,36 @@ export function CoverLetterForm() {
 
     setQuestionBankError(null);
 
-    const response = await fetch(`/api/jobs/${selected.jobId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ company, title }),
-    });
+    try {
+      const response = await fetch(`/api/jobs/${selected.jobId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ company, title }),
+      });
 
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setQuestionBankError(payload.error ?? "Failed to rename saved JD.");
-      return;
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setQuestionBankError(payload.error ?? "Failed to rename saved JD.");
+        return;
+      }
+
+      setSavedQuestionBanks((current) =>
+        current.map((item) =>
+          item.jobId === selected.jobId
+            ? {
+                ...item,
+                company,
+                roleTitle: title,
+                displayName: `${company} - ${title}`,
+              }
+            : item,
+        ),
+      );
+    } catch (renameError) {
+      setQuestionBankError(getErrorMessage(renameError, "Failed to rename saved JD."));
     }
-
-    setSavedQuestionBanks((current) =>
-      current.map((item) =>
-        item.jobId === selected.jobId
-          ? {
-              ...item,
-              company,
-              roleTitle: title,
-              displayName: `${company} - ${title}`,
-            }
-          : item,
-      ),
-    );
   }
 
   function exportQuestionBankMarkdown() {
@@ -276,14 +339,31 @@ export function CoverLetterForm() {
       <div className="stack">
         <section className="card stack">
           <h1>Job Application Engine</h1>
-          <p className="small">Paste a job description and generate a tailored cover letter.</p>
+          <p className="small">Paste a job description or a job-posting URL and generate a tailored cover letter.</p>
           <form onSubmit={handleSubmit} className="stack">
+            <label htmlFor="jobUrlInput">Job URL (optional)</label>
+            <div className="buttonRow">
+              <input
+                id="jobUrlInput"
+                name="jobUrlInput"
+                placeholder="https://job-boards.greenhouse.io/... or LinkedIn job URL"
+                value={jobUrlInput}
+                onChange={(event) => setJobUrlInput(event.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => void extractAndPopulateJobDescription(jobUrlInput)}
+                disabled={isExtractingJd}
+              >
+                {isExtractingJd ? "Extracting JD..." : "Extract JD from URL"}
+              </button>
+            </div>
             <label htmlFor="jobDescription">Job Description</label>
             <textarea
               className="jdTextarea"
               id="jobDescription"
               name="jobDescription"
-              placeholder="Paste the job description here..."
+              placeholder="Paste job description text or a job URL (LinkedIn/company page)..."
               required
               value={jobDescription}
               onChange={(event) => setJobDescription(event.target.value)}

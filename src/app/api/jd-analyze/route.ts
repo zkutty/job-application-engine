@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { analyzeJd } from "@/lib/jd/analyze";
+import { resolveJobDescriptionInput } from "@/lib/jd/resolveInput";
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +11,8 @@ export async function POST(request: Request) {
         ? (body as { jdText?: unknown }).jdText
         : undefined;
 
-    const analysis = await analyzeJd(String(jdText ?? ""));
+    const resolvedJdText = await resolveJobDescriptionInput(String(jdText ?? ""));
+    const analysis = await analyzeJd(resolvedJdText);
 
     return NextResponse.json({ analysis }, { status: 200 });
   } catch (error) {

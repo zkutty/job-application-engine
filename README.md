@@ -14,6 +14,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `GET /api/question-bank`
   - `GET /api/history`
   - `POST /api/jd-analyze`
+  - `POST /api/jd-extract`
   - `PATCH /api/jobs/:id`
   - `GET/PUT /api/profile`
   - `POST /api/profile/import/resume`
@@ -73,7 +74,7 @@ Open: `http://localhost:3000`
 
 ## Generate a Cover Letter
 0. Create an account or sign in at `/login`.
-1. Paste a full job description in the textarea.
+1. Paste a full job description in the textarea, or paste a job-posting URL.
 2. Click `Generate Cover Letter`.
 3. The result appears in the output panel.
 4. History loads from `GET /api/history` and refreshes after each generation.
@@ -82,6 +83,8 @@ Open: `http://localhost:3000`
 7. Question Bank generation creates markdown Q&A and supports export.
 8. Saved question banks can be reloaded later by role/JD from the home page selector.
 9. Saved JD labels can be manually renamed as `Company - Role` from the selector panel.
+10. If a protected job page cannot be extracted (common on some LinkedIn views), paste the JD text directly.
+11. Use the `Job URL` input and `Extract JD from URL` to populate the JD textbox before analysis.
 
 ## Resume Import + AI Edits
 1. Open `/profile/import`.

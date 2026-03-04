@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 import { analyzeJd } from "@/lib/jd/analyze";
+import { resolveJobDescriptionInput } from "@/lib/jd/resolveInput";
 import { generateQuestionBank } from "@/lib/question-bank/generate";
 import { questionBankToMarkdown } from "@/lib/prompts/questionBank";
 import { selectTopStories } from "@/lib/stories/select";
@@ -86,10 +87,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedJobDescription = await resolveJobDescriptionInput(parsed.data.jobDescription);
+
     const [profile, stories, jdSignals] = await Promise.all([
       prisma.candidateProfile.findFirst({ where: { userId: auth.userId } }),
       prisma.story.findMany({ where: { userId: auth.userId }, orderBy: { createdAt: "desc" } }),
-      analyzeJd(parsed.data.jobDescription),
+      analyzeJd(resolvedJobDescription),
     ]);
 
     const candidateStories = stories.map((story) => ({
@@ -114,7 +117,7 @@ export async function POST(request: Request) {
     }));
 
     const questionBank = await generateQuestionBank({
-      jobDescription: parsed.data.jobDescription,
+      jobDescription: resolvedJobDescription,
       profileSummary: profile?.summary,
       voiceGuidelines: profile?.voiceGuidelines,
       selectedStories: topStories,
@@ -124,7 +127,7 @@ export async function POST(request: Request) {
 
     const record = await prisma.job.create({
       data: {
-        jdText: parsed.data.jobDescription,
+        jdText: resolvedJobDescription,
         company: jdSignals.companyGuess,
         title: jdSignals.roleTitleGuess,
         userId: auth.userId,
