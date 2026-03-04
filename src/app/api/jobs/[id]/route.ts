@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { requireUserId } from "@/lib/auth/requireUser";
@@ -55,7 +56,11 @@ export async function PATCH(request: Request, { params }: JobRouteContext) {
     }
 
     return NextResponse.json({ job }, { status: 200 });
-  } catch {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
+    }
+
     return NextResponse.json({ error: "Failed to rename job." }, { status: 500 });
   }
 }
