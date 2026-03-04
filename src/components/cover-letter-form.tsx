@@ -16,6 +16,16 @@ type JdAnalysis = {
   tools: string[];
 };
 
+type SavedQuestionBank = {
+  artifactId: number;
+  createdAt: string;
+  markdown: string;
+  jobId: number;
+  roleTitle: string;
+  jdPreview: string;
+  jdText: string;
+};
+
 export function CoverLetterForm() {
   const [jobDescription, setJobDescription] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
@@ -25,6 +35,8 @@ export function CoverLetterForm() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingQuestionBank, setIsGeneratingQuestionBank] = useState(false);
+  const [savedQuestionBanks, setSavedQuestionBanks] = useState<SavedQuestionBank[]>([]);
+  const [selectedQuestionBankId, setSelectedQuestionBankId] = useState<number | null>(null);
 
   const [analysis, setAnalysis] = useState<JdAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -43,8 +55,21 @@ export function CoverLetterForm() {
     }
   }
 
+  async function loadQuestionBankHistory() {
+    try {
+      const response = await fetch("/api/question-bank", { method: "GET" });
+      const payload = (await response.json()) as { questionBanks?: SavedQuestionBank[] };
+      if (response.ok && payload.questionBanks) {
+        setSavedQuestionBanks(payload.questionBanks);
+      }
+    } catch {
+      // Ignore load errors; generation still works.
+    }
+  }
+
   useEffect(() => {
     void loadHistory();
+    void loadQuestionBankHistory();
   }, []);
 
   async function runAnalysis(text: string) {
@@ -139,6 +164,7 @@ export function CoverLetterForm() {
 
       setQuestionBankMarkdown(payload.markdown);
       await loadHistory();
+      await loadQuestionBankHistory();
     } catch (generationError) {
       const message =
         generationError instanceof Error ? generationError.message : "Failed to generate question bank.";
@@ -146,6 +172,21 @@ export function CoverLetterForm() {
     } finally {
       setIsGeneratingQuestionBank(false);
     }
+  }
+
+  function handleLoadSavedQuestionBank() {
+    if (!selectedQuestionBankId) {
+      return;
+    }
+
+    const selected = savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId);
+    if (!selected) {
+      return;
+    }
+
+    setQuestionBankMarkdown(selected.markdown);
+    setJobDescription(selected.jdText);
+    void runAnalysis(selected.jdText);
   }
 
   function exportQuestionBankMarkdown() {
@@ -198,6 +239,42 @@ export function CoverLetterForm() {
           </form>
           {error ? <p className="error">{error}</p> : null}
           {questionBankError ? <p className="error">{questionBankError}</p> : null}
+        </section>
+
+        <section className="card stack">
+          <h2>Saved Question Banks by Role</h2>
+          {savedQuestionBanks.length === 0 ? (
+            <p className="small">No saved question banks yet.</p>
+          ) : (
+            <>
+              <label htmlFor="savedQuestionBank">Select a saved role/JD</label>
+              <select
+                id="savedQuestionBank"
+                value={selectedQuestionBankId ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedQuestionBankId(value ? Number(value) : null);
+                }}
+              >
+                <option value="">Choose one...</option>
+                {savedQuestionBanks.map((item) => (
+                  <option key={item.artifactId} value={item.artifactId}>
+                    {item.roleTitle} - {new Date(item.createdAt).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={handleLoadSavedQuestionBank} disabled={!selectedQuestionBankId}>
+                Load Selected Question Bank
+              </button>
+              {selectedQuestionBankId ? (
+                <p className="small">
+                  JD Preview:{" "}
+                  {savedQuestionBanks.find((item) => item.artifactId === selectedQuestionBankId)?.jdPreview}
+                  ...
+                </p>
+              ) : null}
+            </>
+          )}
         </section>
 
         <section className="card stack">
