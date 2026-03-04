@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 import { extractPdfText, parseProfileFromResumeText } from "@/lib/profile/importResume";
 
 export async function POST(request: Request) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
 
     const parsedProfile = await parseProfileFromResumeText(rawResumeText);
 
-    const existing = await prisma.candidateProfile.findFirst({ orderBy: { id: "asc" } });
+    const existing = await prisma.candidateProfile.findFirst({ where: { userId: auth.userId } });
 
     const savedProfile = existing
       ? await prisma.candidateProfile.update({
@@ -49,6 +53,7 @@ export async function POST(request: Request) {
             voiceGuidelines: parsedProfile.voiceGuidelines,
             profileJson: JSON.stringify(parsedProfile),
             rawResumeText,
+            userId: auth.userId,
           },
         });
 

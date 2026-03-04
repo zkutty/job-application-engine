@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
 
 const StoryInputSchema = z.object({
@@ -11,12 +12,21 @@ const StoryInputSchema = z.object({
   tagsJson: z.string().trim().min(2),
 });
 
-export async function GET() {
-  const stories = await prisma.story.findMany({ orderBy: { createdAt: "desc" } });
+export async function GET(request: Request) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
+  const stories = await prisma.story.findMany({
+    where: { userId: auth.userId },
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json({ stories }, { status: 200 });
 }
 
 export async function POST(request: Request) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = (await request.json()) as unknown;
     const parsed = StoryInputSchema.safeParse(body);
@@ -28,7 +38,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const story = await prisma.story.create({ data: parsed.data });
+    const story = await prisma.story.create({ data: { ...parsed.data, userId: auth.userId } });
     return NextResponse.json({ story }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create story." }, { status: 500 });

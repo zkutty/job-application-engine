@@ -25,8 +25,13 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
 - OpenAI wrapper in `src/lib/openai/client.ts`
 - Prompt template in `src/lib/prompts/coverLetter.ts`
 - Zod request validation
-- Prisma + SQLite persistence (`Job`, `Artifact`, `CandidateProfile`, `Story`)
-- Profile editor at `/profile` (single profile, no auth)
+- Prisma + SQLite persistence (`User`, `Session`, `Job`, `Artifact`, `CandidateProfile`, `Story`)
+- Auth routes:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
+- Profile editor at `/profile` (per-user profile)
 - Story Bank editor at `/stories` (add/edit/delete)
 - ESLint + Prettier + TypeScript scripts
 
@@ -48,6 +53,8 @@ cp .env.example .env.local
 ```env
 OPENAI_API_KEY=your_key_here
 DATABASE_URL="file:./prisma/dev.db"
+BASIC_AUTH_USER=
+BASIC_AUTH_PASS=
 ```
 
 4. Run Prisma migration and generate client:
@@ -65,6 +72,7 @@ npm run dev
 Open: `http://localhost:3000`
 
 ## Generate a Cover Letter
+0. Create an account or sign in at `/login`.
 1. Paste a full job description in the textarea.
 2. Click `Generate Cover Letter`.
 3. The result appears in the output panel.
@@ -82,6 +90,10 @@ Open: `http://localhost:3000`
 4. Review suggestions and rewritten resume text.
 5. Click `Save Final Profile` to store parsed profile data.
 6. Click `Download Resume DOCX` and open/edit directly in Word or Google Docs.
+
+## Data Privacy Scope
+- Profiles, stories, saved JDs, question banks, and cover-letter history are scoped to the logged-in account.
+- Logged-in users cannot see or rename each other's artifacts.
 
 ## Available Scripts
 - `npm run dev` - start local dev server

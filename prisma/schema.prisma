@@ -14,6 +14,10 @@ model Job {
   company    String?
   jdText     String
   artifacts  Artifact[]
+  userId     Int
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Artifact {
@@ -37,6 +41,8 @@ model CandidateProfile {
   voiceGuidelines String
   profileJson     String?
   rawResumeText   String?
+  userId          Int      @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Story {
@@ -47,4 +53,31 @@ model Story {
   action    String
   result    String
   tagsJson  String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  passwordHash      String
+  createdAt         DateTime           @default(now())
+  sessions          Session[]
+  jobs              Job[]
+  stories           Story[]
+  candidateProfile  CandidateProfile?
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
