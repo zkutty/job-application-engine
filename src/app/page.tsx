@@ -1,9 +1,9 @@
-import { CoverLetterForm } from "@/components/cover-letter-form";
+import { JobsHome } from "@/components/jobs-home";
 
 export default function HomePage() {
   return (
     <main>
-      <CoverLetterForm />
+      <JobsHome />
     </main>
   );
 }
