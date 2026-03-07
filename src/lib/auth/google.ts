@@ -1,6 +1,9 @@
+import crypto from "node:crypto";
+
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+const GOOGLE_STATE_TTL_SECONDS = 60 * 10;
 
 export type GoogleProfile = {
   sub: string;
@@ -17,6 +20,80 @@ function requireGoogleEnv(): { clientId: string; clientSecret: string } {
   }
 
   return { clientId, clientSecret };
+}
+
+function encodeBase64Url(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
+function decodeBase64Url(value: string): string | null {
+  try {
+    return Buffer.from(value, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
+function stateSigningSecret(): string {
+  const explicitSecret = process.env.GOOGLE_OAUTH_STATE_SECRET;
+  if (explicitSecret && explicitSecret.trim()) {
+    return explicitSecret.trim();
+  }
+
+  const { clientSecret } = requireGoogleEnv();
+  return clientSecret;
+}
+
+function signStatePayload(payload: string): string {
+  return crypto.createHmac("sha256", stateSigningSecret()).update(payload).digest("base64url");
+}
+
+export function createSignedGoogleOAuthState(now = Date.now()): string {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const issuedAtSeconds = Math.floor(now / 1000);
+  const payload = `${nonce}.${issuedAtSeconds}`;
+  const encodedPayload = encodeBase64Url(payload);
+  const signature = signStatePayload(encodedPayload);
+  return `${encodedPayload}.${signature}`;
+}
+
+export function validateSignedGoogleOAuthState(state: string, now = Date.now()): boolean {
+  const [encodedPayload, signature] = state.split(".");
+  if (!encodedPayload || !signature) {
+    return false;
+  }
+
+  const expectedSignature = signStatePayload(encodedPayload);
+  const providedBuffer = Buffer.from(signature, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    return false;
+  }
+
+  const payload = decodeBase64Url(encodedPayload);
+  if (!payload) {
+    return false;
+  }
+
+  const [nonce, issuedAtRaw] = payload.split(".");
+  if (!nonce || !/^[a-f0-9]{32}$/i.test(nonce) || !issuedAtRaw) {
+    return false;
+  }
+
+  const issuedAtSeconds = Number(issuedAtRaw);
+  if (!Number.isFinite(issuedAtSeconds)) {
+    return false;
+  }
+
+  const nowSeconds = Math.floor(now / 1000);
+  if (issuedAtSeconds > nowSeconds + 60) {
+    return false;
+  }
+
+  return nowSeconds - issuedAtSeconds <= GOOGLE_STATE_TTL_SECONDS;
 }
 
 export function resolvePublicOrigin(request: Request): string {
