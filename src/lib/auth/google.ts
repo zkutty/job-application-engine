@@ -19,13 +19,28 @@ function requireGoogleEnv(): { clientId: string; clientSecret: string } {
   return { clientId, clientSecret };
 }
 
+function resolvePublicOrigin(request: Request): string {
+  const explicitOrigin =
+    process.env.APP_ORIGIN ?? process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL;
+  if (explicitOrigin) {
+    return explicitOrigin.replace(/\/+$/, "");
+  }
+
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  return new URL(request.url).origin;
+}
+
 export function resolveGoogleRedirectUri(request: Request): string {
   if (process.env.GOOGLE_REDIRECT_URI) {
     return process.env.GOOGLE_REDIRECT_URI;
   }
 
-  const url = new URL(request.url);
-  return `${url.origin}/api/auth/google/callback`;
+  return `${resolvePublicOrigin(request)}/api/auth/google/callback`;
 }
 
 export function buildGoogleAuthUrl(request: Request, state: string): string {
