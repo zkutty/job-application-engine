@@ -12,10 +12,14 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const search = (url.searchParams.get("q") ?? "").trim().slice(0, MAX_QUERY_LENGTH);
+    const includeArchived =
+      (url.searchParams.get("includeArchived") ?? "").toLowerCase() === "true" ||
+      url.searchParams.get("includeArchived") === "1";
 
     const jobs = await prisma.job.findMany({
       where: {
         userId: auth.userId,
+        ...(includeArchived ? {} : { applicationStage: { not: "withdrawn" } }),
         ...(search
           ? {
               OR: [
@@ -51,6 +55,7 @@ export async function GET(request: Request) {
           company: job.company ?? "Unknown Company",
           title: job.title ?? "Untitled Role",
           applicationStage: job.applicationStage,
+          archived: job.applicationStage === "withdrawn",
           artifactCount: job._count.artifacts,
           noteCount: job._count.notes,
         })),

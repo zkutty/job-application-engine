@@ -84,6 +84,7 @@ export async function GET(request: Request, { params }: JobRouteContext) {
           jdText: job.jdText,
           jdSummary: job.jdSummary ?? job.jdText,
           applicationStage: job.applicationStage,
+          archived: job.applicationStage === "withdrawn",
           coverLetter: latestCoverLetter,
           questionBank: latestQuestionBank,
           notes: job.notes,
