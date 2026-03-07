@@ -75,6 +75,10 @@ model User {
   jobs              Job[]
   stories           Story[]
   candidateProfile  CandidateProfile?
+  billingCustomer   BillingCustomer?
+  subscriptions     BillingSubscription[]
+  entitlements      Entitlement[]
+  donationPayments  DonationPayment[]
 }
 
 model Session {
@@ -112,4 +116,66 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model BillingCustomer {
+  id               Int                   @id @default(autoincrement())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  stripeCustomerId String                @unique
+  userId           Int                   @unique
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions    BillingSubscription[]
+  donationPayments DonationPayment[]
+}
+
+model BillingSubscription {
+  id                   Int             @id @default(autoincrement())
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  stripeSubscriptionId String          @unique
+  stripePriceId        String?
+  status               String
+  cancelAtPeriodEnd    Boolean         @default(false)
+  currentPeriodEnd     DateTime?
+  customerId           Int
+  customer             BillingCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId               Int
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([userId, status])
+}
+
+model Entitlement {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  featureKey String
+  enabled    Boolean  @default(false)
+  source     String   @default("manual")
+  expiresAt  DateTime?
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureKey])
+  @@index([featureKey, enabled])
+}
+
+model DonationPayment {
+  id                      Int             @id @default(autoincrement())
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  stripeCheckoutSessionId String          @unique
+  stripePaymentIntentId   String?
+  status                  String          @default("pending")
+  amountCents             Int
+  currency                String          @default("usd")
+  customerId              Int?
+  customer                BillingCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  userId                  Int
+  user                    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([userId, createdAt])
 }

@@ -29,6 +29,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
 - Prompt template in `src/lib/prompts/coverLetter.ts`
 - Zod request validation
 - Prisma + SQLite persistence (`User`, `Session`, `Job`, `JobNote`, `Artifact`, `CandidateProfile`, `Story`)
+- Billing persistence foundation (`BillingCustomer`, `BillingSubscription`, `Entitlement`, `DonationPayment`)
 - Auth routes:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -38,6 +39,9 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `POST /api/auth/password-reset/confirm`
   - `GET /api/auth/google/start`
   - `GET /api/auth/google/callback`
+  - `POST /api/billing/donate`
+  - `POST /api/billing/portal`
+  - `POST /api/stripe/webhook`
 - Profile editor at `/profile` (per-user profile)
 - Story Bank editor at `/stories` (add/edit/delete)
 - ESLint + Prettier + TypeScript scripts
@@ -65,6 +69,12 @@ BASIC_AUTH_PASS=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=
+APP_ORIGIN=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_SUPPORT_DONATION_PRODUCT_NAME=
+STRIPE_PRO_PRICE_ID=
+NEXT_PUBLIC_STRIPE_DONATION_TEST_LINK=
 ```
 
 `GOOGLE_REDIRECT_URI` is optional; if omitted, the app uses `{APP_ORIGIN}/api/auth/google/callback`.
@@ -114,6 +124,20 @@ Open: `http://localhost:3000`
 ## Data Privacy Scope
 - Profiles, stories, saved JDs, question banks, and cover-letter history are scoped to the logged-in account.
 - Logged-in users cannot see or rename each other's artifacts.
+
+## Donations + Billing Foundation
+- Engine page includes Stripe Checkout one-time donations (`$5/$15/$30` + custom amount).
+- Billing tables now track customer mapping, subscriptions, donation payments, and entitlements.
+- Stripe webhooks update donation/subscription state:
+  - `checkout.session.completed`
+  - `customer.subscription.created`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+
+Local webhook forwarding:
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
 
 ## Available Scripts
 - `npm run dev` - start local dev server
