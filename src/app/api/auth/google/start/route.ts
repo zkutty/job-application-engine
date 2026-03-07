@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { buildGoogleAuthUrl } from "@/lib/auth/google";
+import { buildGoogleAuthUrl, resolvePublicOrigin } from "@/lib/auth/google";
 
 const GOOGLE_STATE_COOKIE = "jae_google_oauth_state";
 
@@ -21,6 +21,8 @@ export async function GET(request: Request) {
       headers: { "Set-Cookie": oauthStateCookieValue(state) },
     });
   } catch {
-    return NextResponse.redirect(new URL("/login?error=Google%20sign-in%20is%20not%20configured.", request.url));
+    return NextResponse.redirect(
+      new URL("/login?error=Google%20sign-in%20is%20not%20configured.", resolvePublicOrigin(request)),
+    );
   }
 }

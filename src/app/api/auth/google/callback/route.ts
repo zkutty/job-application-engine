@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { exchangeCodeForAccessToken, fetchGoogleProfile } from "@/lib/auth/google";
+import { exchangeCodeForAccessToken, fetchGoogleProfile, resolvePublicOrigin } from "@/lib/auth/google";
 import { cookieHeaderValue, createSession, getCookieValue } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -12,7 +12,7 @@ function clearOAuthStateCookie(): string {
 }
 
 function redirectToLogin(request: Request, error: string): NextResponse {
-  const url = new URL("/login", request.url);
+  const url = new URL("/login", resolvePublicOrigin(request));
   url.searchParams.set("error", error);
 
   return NextResponse.redirect(url, {
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
     const session = await createSession(user.id);
 
-    const response = NextResponse.redirect(new URL("/", request.url), { status: 302 });
+    const response = NextResponse.redirect(new URL("/", resolvePublicOrigin(request)), { status: 302 });
     response.headers.append("Set-Cookie", clearOAuthStateCookie());
     response.headers.append("Set-Cookie", cookieHeaderValue(session.token, session.expiresAt));
     return response;

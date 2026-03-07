@@ -19,7 +19,7 @@ function requireGoogleEnv(): { clientId: string; clientSecret: string } {
   return { clientId, clientSecret };
 }
 
-function resolvePublicOrigin(request: Request): string {
+export function resolvePublicOrigin(request: Request): string {
   const explicitOrigin =
     process.env.APP_ORIGIN ?? process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL;
   if (explicitOrigin) {
