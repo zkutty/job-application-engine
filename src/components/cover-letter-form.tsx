@@ -587,8 +587,8 @@ export function CoverLetterForm() {
     <div className="layout">
       <div className="stack">
         <section className="card stack">
-          <h1>Job Application Engine</h1>
-          <p className="small">Paste a job description or a job-posting URL and generate a tailored cover letter.</p>
+          <h1>HireSage Engine</h1>
+          <p className="small">Paste a job description or posting URL to generate a tailored cover letter.</p>
           <form onSubmit={handleSubmit} className="stack">
             <label htmlFor="jobUrlInput">Job URL (optional)</label>
             <div className="buttonRow">

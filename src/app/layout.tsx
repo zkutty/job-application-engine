@@ -4,8 +4,8 @@ import "./globals.css";
 import { LogoutButton } from "@/components/logout-button";
 
 export const metadata: Metadata = {
-  title: "Job Application Engine",
-  description: "Generate tailored cover letters from job descriptions.",
+  title: "HireSage",
+  description: "Apply with wisdom. Generate tailored job application artifacts with AI guidance.",
 };
 
 export default function RootLayout({
@@ -18,12 +18,27 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <header className="topNav">
           <nav>
-            <Link href="/">Home</Link>
-            <Link href="/engine">Engine</Link>
-            <Link href="/profile">Profile</Link>
-            <Link href="/profile/import">Import Profile</Link>
-            <Link href="/stories">Stories</Link>
-            <Link href="/login">Login</Link>
+            <Link href="/" className="brandLink">
+              HireSage
+            </Link>
+            <Link href="/" className="navLink">
+              Home
+            </Link>
+            <Link href="/engine" className="navLink">
+              Engine
+            </Link>
+            <Link href="/profile" className="navLink">
+              Profile
+            </Link>
+            <Link href="/profile/import" className="navLink">
+              Import Profile
+            </Link>
+            <Link href="/stories" className="navLink">
+              Stories
+            </Link>
+            <Link href="/login" className="navLink">
+              Login
+            </Link>
             <LogoutButton />
           </nav>
         </header>

@@ -301,16 +301,11 @@ export default function ProfileImportPage() {
   return (
     <main>
       <section className="card stack">
-        <h1>1. Upload Resume</h1>
+        <h1>HireSage Resume Import</h1>
+        <p className="small">Upload your resume and generate structured profile data with AI guidance.</p>
         <form onSubmit={handleImport} className="stack">
           <div
-            className="card"
-            style={{
-              borderStyle: "dashed",
-              borderWidth: "2px",
-              borderColor: isDragActive ? "#111827" : "#9ca3af",
-              background: isDragActive ? "#f3f4f6" : "transparent",
-            }}
+            className={`card dragDropZone${isDragActive ? " active" : ""}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}

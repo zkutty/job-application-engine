@@ -68,7 +68,7 @@ export default function StoriesPage() {
   return (
     <main>
       <section className="card stack">
-        <h1>Story Bank</h1>
+        <h1>HireSage Story Bank</h1>
         <form className="stack" onSubmit={createStory}>
           <label>
             Title

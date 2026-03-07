@@ -63,7 +63,7 @@ export default function ProfilePage() {
   return (
     <main>
       <section className="card stack">
-        <h1>Candidate Profile</h1>
+        <h1>HireSage Candidate Profile</h1>
         <p className="small">
           You can also import from PDF at <Link href="/profile/import">/profile/import</Link>.
         </p>

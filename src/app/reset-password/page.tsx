@@ -74,66 +74,66 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="container" style={{ maxWidth: 520 }}>
-      <h1>{hasToken ? "Set New Password" : "Reset Password"}</h1>
-      <p className="small">
-        {hasToken
-          ? "Enter a new password for your account."
-          : "Enter your account email and we will generate a reset link."}
-      </p>
-
-      {hasToken ? (
-        <form onSubmit={handleConfirm}>
-          <label>
-            New Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              required
-              minLength={8}
-            />
-          </label>
-
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 12 }}>
-            <button type="submit" disabled={loading}>
-              Update Password
-            </button>
-            <Link href="/login">Back to sign in</Link>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={handleRequest}>
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </label>
-
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 12 }}>
-            <button type="submit" disabled={loading}>
-              Generate Reset Link
-            </button>
-            <Link href="/login">Back to sign in</Link>
-          </div>
-        </form>
-      )}
-
-      <p className="small" style={{ marginTop: 16 }}>
-        {status}
-      </p>
-
-      {resetUrl ? (
-        <p className="small" style={{ marginTop: 8 }}>
-          Local dev link: <a href={resetUrl}>{resetUrl}</a>
+    <main className="container authMain">
+      <section className="card stack">
+        <h1>{hasToken ? "Set New Password" : "Reset Password"}</h1>
+        <p className="small">
+          {hasToken
+            ? "Enter a new password for your HireSage account."
+            : "Enter your account email and we will generate a reset link."}
         </p>
-      ) : null}
+
+        {hasToken ? (
+          <form onSubmit={handleConfirm} className="stack">
+            <label>
+              New Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={8}
+              />
+            </label>
+
+            <div className="inlineActions">
+              <button type="submit" disabled={loading}>
+                Update Password
+              </button>
+              <Link href="/login">Back to sign in</Link>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleRequest} className="stack">
+            <label>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <div className="inlineActions">
+              <button type="submit" disabled={loading}>
+                Generate Reset Link
+              </button>
+              <Link href="/login">Back to sign in</Link>
+            </div>
+          </form>
+        )}
+
+        <p className="small">{status}</p>
+
+        {resetUrl ? (
+          <p className="small">
+            Local dev link: <a href={resetUrl}>{resetUrl}</a>
+          </p>
+        ) : null}
+      </section>
     </main>
   );
 }

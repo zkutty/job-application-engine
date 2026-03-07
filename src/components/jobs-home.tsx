@@ -227,8 +227,8 @@ export function JobsHome() {
       <section className="card stack">
         <div className="jobsHeaderRow">
           <div>
-            <h1>Job Application Engine</h1>
-            <p className="small">Track all saved jobs and open each application workspace.</p>
+            <h1>HireSage Workspace</h1>
+            <p className="small">Track every saved role and move each application forward with clarity.</p>
           </div>
           <Link href="/engine" className="primaryLinkButton">
             New Job Application

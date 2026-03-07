@@ -12,7 +12,7 @@ export function LogoutButton() {
   }
 
   return (
-    <button type="button" onClick={handleLogout} style={{ marginLeft: 12 }}>
+    <button type="button" onClick={handleLogout} className="secondaryButton logoutButton">
       Log Out
     </button>
   );
