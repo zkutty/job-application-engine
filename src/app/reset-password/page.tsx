@@ -1,18 +1,20 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
-  const token = useMemo(() => searchParams.get("token") ?? "", [searchParams]);
-
+  const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
   const [resetUrl, setResetUrl] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const nextToken = new URLSearchParams(window.location.search).get("token") ?? "";
+    setToken(nextToken);
+  }, []);
 
   const hasToken = token.length > 0;
 
