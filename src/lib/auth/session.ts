@@ -18,6 +18,10 @@ function parseCookies(rawCookieHeader: string | null): Map<string, string> {
   return cookies;
 }
 
+export function getCookieValue(rawCookieHeader: string | null, key: string): string | null {
+  return parseCookies(rawCookieHeader).get(key) ?? null;
+}
+
 export function extractSessionToken(request: Request): string | null {
   const cookies = parseCookies(request.headers.get("cookie"));
   const token = cookies.get(SESSION_COOKIE_NAME);
