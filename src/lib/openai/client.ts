@@ -24,6 +24,12 @@ type GenerateCoverLetterInput = {
     action: string;
     result: string;
   }>;
+  retryContext?: {
+    attemptNumber: number;
+    previousWordCount: number;
+    minWords: number;
+    maxWords: number;
+  };
 };
 
 export async function generateCoverLetter(input: GenerateCoverLetterInput): Promise<string> {

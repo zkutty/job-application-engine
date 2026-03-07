@@ -12,6 +12,12 @@ type BuildCoverLetterPromptInput = {
   profileSummary?: string;
   voiceGuidelines?: string;
   selectedStories?: StoryPromptInput[];
+  retryContext?: {
+    attemptNumber: number;
+    previousWordCount: number;
+    minWords: number;
+    maxWords: number;
+  };
 };
 
 export function buildCoverLetterMessages(
@@ -61,8 +67,24 @@ export function buildCoverLetterMessages(
     "Generate the cover letter now.",
   ].join("\n");
 
-  return [
+  const retryPrompt = input.retryContext
+    ? [
+        "Revision request:",
+        `This is attempt ${input.retryContext.attemptNumber}.`,
+        `Your previous draft was ${input.retryContext.previousWordCount} words.`,
+        `Rewrite to be between ${input.retryContext.minWords} and ${input.retryContext.maxWords} words.`,
+        "Aim for about 300 words while preserving factual accuracy and placeholders.",
+      ].join("\n")
+    : null;
+
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
   ];
+
+  if (retryPrompt) {
+    messages.push({ role: "user", content: retryPrompt });
+  }
+
+  return messages;
 }

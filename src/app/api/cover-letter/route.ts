@@ -71,29 +71,52 @@ export async function POST(request: Request) {
       result: storyResultWithPlaceholder(story.result),
     }));
 
-    const coverLetter = await generateCoverLetter({
-      jobDescription: resolvedJobDescription,
-      profileSummary: profile?.summary,
-      voiceGuidelines: profile?.voiceGuidelines,
-      selectedStories: topStories,
-    });
+    const minWords = 250;
+    const maxWords = 350;
+    const maxAttempts = 3;
+    const sourceTexts = [
+      resolvedJobDescription,
+      profile?.summary ?? "",
+      profile?.voiceGuidelines ?? "",
+      ...topStories.flatMap((story) => [story.title, story.situation, story.action, story.result]),
+    ];
 
-    const checked = postCheckCoverLetter({
-      coverLetter,
-      sourceTexts: [
-        resolvedJobDescription,
-        profile?.summary ?? "",
-        profile?.voiceGuidelines ?? "",
-        ...topStories.flatMap((story) => [story.title, story.situation, story.action, story.result]),
-      ],
-      minWords: 250,
-      maxWords: 350,
-    });
+    let checked:
+      | ReturnType<typeof postCheckCoverLetter>
+      | null = null;
 
-    if (!checked.withinWordRange) {
+    for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber += 1) {
+      const coverLetter = await generateCoverLetter({
+        jobDescription: resolvedJobDescription,
+        profileSummary: profile?.summary,
+        voiceGuidelines: profile?.voiceGuidelines,
+        selectedStories: topStories,
+        retryContext: checked
+          ? {
+              attemptNumber,
+              previousWordCount: checked.wordCount,
+              minWords,
+              maxWords,
+            }
+          : undefined,
+      });
+
+      checked = postCheckCoverLetter({
+        coverLetter,
+        sourceTexts,
+        minWords,
+        maxWords,
+      });
+
+      if (checked.withinWordRange) {
+        break;
+      }
+    }
+
+    if (!checked || !checked.withinWordRange) {
       return NextResponse.json(
         {
-          error: `Generated cover letter length (${checked.wordCount} words) is outside 250-350. Please retry.`,
+          error: `Generated cover letter length (${checked?.wordCount ?? 0} words) is outside 250-350 after ${maxAttempts} attempts. Please retry.`,
         },
         { status: 422 },
       );
