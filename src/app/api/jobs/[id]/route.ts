@@ -25,6 +25,77 @@ type JobRouteContext = {
   params: Promise<{ id: string }>;
 };
 
+export async function GET(request: Request, { params }: JobRouteContext) {
+  const auth = await requireUserId(request);
+  if (!auth.ok) return auth.response;
+
+  const id = parseId(await params);
+  if (!id) {
+    return NextResponse.json({ error: "Invalid job id." }, { status: 400 });
+  }
+
+  try {
+    const job = await prisma.job.findFirst({
+      where: { id, userId: auth.userId },
+      select: {
+        id: true,
+        createdAt: true,
+        company: true,
+        title: true,
+        jdText: true,
+        jdSummary: true,
+        applicationStage: true,
+        artifacts: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            type: true,
+            content: true,
+            createdAt: true,
+          },
+        },
+        notes: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            stage: true,
+            content: true,
+          },
+        },
+      },
+    });
+
+    if (!job) {
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
+    }
+
+    const latestCoverLetter = job.artifacts.find((artifact) => artifact.type === "cover_letter") ?? null;
+    const latestQuestionBank = job.artifacts.find((artifact) => artifact.type === "question_bank") ?? null;
+
+    return NextResponse.json(
+      {
+        job: {
+          id: job.id,
+          createdAt: job.createdAt,
+          company: job.company ?? "Unknown Company",
+          title: job.title ?? "Untitled Role",
+          jdText: job.jdText,
+          jdSummary: job.jdSummary ?? job.jdText,
+          applicationStage: job.applicationStage,
+          coverLetter: latestCoverLetter,
+          questionBank: latestQuestionBank,
+          notes: job.notes,
+        },
+      },
+      { status: 200 },
+    );
+  } catch {
+    return NextResponse.json({ error: "Failed to load job." }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: Request, { params }: JobRouteContext) {
   const auth = await requireUserId(request);
   if (!auth.ok) return auth.response;

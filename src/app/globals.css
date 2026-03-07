@@ -89,6 +89,15 @@ input {
   font: inherit;
 }
 
+select {
+  width: 100%;
+  border: 1px solid #c4d1ee;
+  border-radius: 8px;
+  padding: 0.6rem;
+  font: inherit;
+  background: #ffffff;
+}
+
 button {
   border: none;
   border-radius: 8px;
@@ -271,4 +280,68 @@ li + li {
 .small {
   color: #475569;
   font-size: 0.9rem;
+}
+
+.jobsHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.primaryLinkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: #0b63f6;
+  color: #ffffff;
+}
+
+.secondaryLinkButton {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.jobList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.jobList li + li {
+  margin-top: 0;
+}
+
+.jobListItem {
+  border: 1px solid #dbe3f5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.jobListLink {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.jobListLink:hover {
+  background: #f8fbff;
+}
+
+.jobMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
