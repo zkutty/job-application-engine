@@ -74,6 +74,10 @@ export function JobsHome() {
         });
         const payload = (await response.json()) as { jobs?: JobListItem[]; error?: string };
 
+        if (response.status === 401) {
+          throw new Error("You are signed out. Go to Account to sign in and view your saved jobs.");
+        }
+
         if (!response.ok || !payload.jobs) {
           throw new Error(payload.error ?? "Failed to load jobs.");
         }

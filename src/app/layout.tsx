@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { LogoutButton } from "@/components/logout-button";
+import { AuthNav } from "@/components/auth-nav";
 
 export const metadata: Metadata = {
   title: "HireSage",
@@ -36,10 +36,7 @@ export default function RootLayout({
             <Link href="/stories" className="navLink">
               Stories
             </Link>
-            <Link href="/login" className="navLink">
-              Login
-            </Link>
-            <LogoutButton />
+            <AuthNav />
           </nav>
         </header>
         {children}
