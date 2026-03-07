@@ -41,6 +41,7 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `GET /api/auth/google/callback`
   - `POST /api/billing/donate`
   - `POST /api/billing/portal`
+  - `GET /api/billing/status`
   - `POST /api/stripe/webhook`
 - Profile editor at `/profile` (per-user profile)
 - Story Bank editor at `/stories` (add/edit/delete)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DEFAULT_DONATION_AMOUNTS_CENTS } from "@/lib/billing/constants";
 
@@ -14,10 +14,35 @@ type PortalResponse = {
   error?: string;
 };
 
+type BillingStatusResponse = {
+  supporter?: boolean;
+  proAccess?: boolean;
+  proAccessExpiresAt?: string | null;
+  donation?: {
+    lifetimeDonatedCents: number;
+    successfulDonationCount: number;
+    pendingDonationCount: number;
+    lastDonation: {
+      amountCents: number;
+      currency: string;
+      updatedAt: string;
+    } | null;
+  };
+  error?: string;
+};
+
 function formatUsd(cents: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+}
+
+function formatCurrency(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
     maximumFractionDigits: 0,
   }).format(cents / 100);
 }
@@ -28,6 +53,8 @@ export function DonationCard() {
   const [customAmountInput, setCustomAmountInput] = useState("10");
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
 
   const customAmountCents = useMemo(() => {
     const dollars = Number(customAmountInput);
@@ -37,6 +64,30 @@ export function DonationCard() {
 
     return Math.round(dollars * 100);
   }, [customAmountInput]);
+
+  async function loadBillingStatus() {
+    setIsLoadingStatus(true);
+
+    try {
+      const response = await fetch("/api/billing/status", { method: "GET" });
+      const payload = (await response.json()) as BillingStatusResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to load billing status.");
+      }
+
+      setBillingStatus(payload);
+    } catch (statusError) {
+      const message = statusError instanceof Error ? statusError.message : "Unable to load billing status.";
+      setError(message);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadBillingStatus();
+  }, []);
 
   async function startDonation(amountCents: number) {
     setError(null);
@@ -92,6 +143,35 @@ export function DonationCard() {
       <p className="small">
         One-time donations help fund maintenance while core generation stays free. Billing is Stripe-hosted.
       </p>
+      <p className="small">
+        {isLoadingStatus
+          ? "Loading billing status..."
+          : billingStatus?.supporter
+            ? "Supporter status: Active"
+            : "Supporter status: Not active yet"}
+      </p>
+      {billingStatus?.donation ? (
+        <p className="small">
+          Lifetime donated: {formatUsd(billingStatus.donation.lifetimeDonatedCents)} ({billingStatus.donation.successfulDonationCount} successful donation
+          {billingStatus.donation.successfulDonationCount === 1 ? "" : "s"})
+          {billingStatus.donation.lastDonation
+            ? `, last: ${formatCurrency(
+                billingStatus.donation.lastDonation.amountCents,
+                billingStatus.donation.lastDonation.currency,
+              )} on ${new Date(billingStatus.donation.lastDonation.updatedAt).toLocaleString()}`
+            : ""}
+        </p>
+      ) : null}
+      {billingStatus?.donation?.pendingDonationCount ? (
+        <p className="small">
+          Pending donation records: {billingStatus.donation.pendingDonationCount} (if this stays {" > "} 0, check webhook forwarding).
+        </p>
+      ) : null}
+      <div className="buttonRow">
+        <button type="button" onClick={() => void loadBillingStatus()} disabled={isLoadingStatus || isOpeningPortal || isRedirectingAmount !== null}>
+          {isLoadingStatus ? "Refreshing..." : "Refresh Billing Status"}
+        </button>
+      </div>
       {directTestCheckoutUrl ? (
         <>
           <p className="small">
