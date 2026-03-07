@@ -34,6 +34,10 @@ A minimal Next.js (App Router) + TypeScript app for generating cover letters fro
   - `POST /api/auth/login`
   - `POST /api/auth/logout`
   - `GET /api/auth/me`
+  - `POST /api/auth/password-reset/request`
+  - `POST /api/auth/password-reset/confirm`
+  - `GET /api/auth/google/start`
+  - `GET /api/auth/google/callback`
 - Profile editor at `/profile` (per-user profile)
 - Story Bank editor at `/stories` (add/edit/delete)
 - ESLint + Prettier + TypeScript scripts
@@ -58,7 +62,15 @@ OPENAI_API_KEY=your_key_here
 DATABASE_URL="file:./prisma/dev.db"
 BASIC_AUTH_USER=
 BASIC_AUTH_PASS=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
 ```
+
+`GOOGLE_REDIRECT_URI` is optional; if omitted, the app uses `{APP_ORIGIN}/api/auth/google/callback`.
+In Google Cloud OAuth settings, allow:
+- JavaScript origin: your app origin (for example `http://localhost:3000`)
+- Redirect URI: `http://localhost:3000/api/auth/google/callback`
 
 4. Run Prisma migration and generate client:
 
@@ -76,6 +88,7 @@ Open: `http://localhost:3000`
 
 ## Generate a Cover Letter
 0. Create an account or sign in at `/login`.
+0.1 If you forget your password, use `Forgot password?` on `/login` and open the generated link in local development.
 1. Paste a full job description in the textarea, or paste a job-posting URL.
 2. Click `Generate Cover Letter`.
 3. The result appears in the output panel.

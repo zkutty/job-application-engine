@@ -1,16 +1,18 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Mode = "login" | "register";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(searchParams.get("error") ?? "");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -87,7 +89,23 @@ export default function LoginPage() {
             {mode === "login" ? "Need an account?" : "Have an account?"}
           </button>
         </div>
+        {mode === "login" ? (
+          <p className="small" style={{ marginTop: 8 }}>
+            <Link href="/reset-password">Forgot password?</Link>
+          </p>
+        ) : null}
       </form>
+
+      <div style={{ marginTop: 16 }}>
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "/api/auth/google/start";
+          }}
+        >
+          Continue with Google
+        </button>
+      </div>
 
       <p className="small" style={{ marginTop: 16 }}>
         {status}

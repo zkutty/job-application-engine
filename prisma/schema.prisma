@@ -67,9 +67,11 @@ model Story {
 model User {
   id                Int                @id @default(autoincrement())
   email             String             @unique
-  passwordHash      String
+  passwordHash      String?
+  googleSub         String?            @unique
   createdAt         DateTime           @default(now())
   sessions          Session[]
+  passwordResetTokens PasswordResetToken[]
   jobs              Job[]
   stories           Story[]
   candidateProfile  CandidateProfile?
@@ -98,4 +100,16 @@ model JobNote {
 
   @@index([jobId])
   @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

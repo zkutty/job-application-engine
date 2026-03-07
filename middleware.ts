@@ -12,7 +12,14 @@ function unauthorized() {
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthPage = path === "/login";
-  const isPublicAuthApi = path === "/api/auth/login" || path === "/api/auth/register";
+  const isPasswordResetPage = path === "/reset-password";
+  const isPublicAuthApi =
+    path === "/api/auth/login" ||
+    path === "/api/auth/register" ||
+    path === "/api/auth/password-reset/request" ||
+    path === "/api/auth/password-reset/confirm" ||
+    path === "/api/auth/google/start" ||
+    path === "/api/auth/google/callback";
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE_NAME)?.value);
 
   const user = process.env.BASIC_AUTH_USER;
@@ -47,7 +54,7 @@ export function middleware(req: NextRequest) {
     if (providedUser !== user || providedPass !== pass) return unauthorized();
   }
 
-  if (!hasSession && !isAuthPage && !isPublicAuthApi) {
+  if (!hasSession && !isAuthPage && !isPasswordResetPage && !isPublicAuthApi) {
     if (path.startsWith("/api/")) {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
