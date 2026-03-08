@@ -259,7 +259,9 @@ export function CoverLetterForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setQuestionBankError(null);
     setIsLoading(true);
+    setIsGeneratingQuestionBank(true);
 
     try {
       const response = await fetch("/api/cover-letter", {
@@ -267,21 +269,29 @@ export function CoverLetterForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ jobDescription }),
+        body: JSON.stringify({ jobDescription, generateQuestionBank: true }),
       });
 
-      const payload = (await response.json()) as { coverLetter?: string; error?: string };
+      const payload = (await response.json()) as {
+        coverLetter?: string;
+        questionBankMarkdown?: string | null;
+        error?: string;
+      };
 
       if (!response.ok || !payload.coverLetter) {
         throw new Error(payload.error ?? "Failed to generate cover letter.");
       }
 
       setCoverLetter(payload.coverLetter);
-      await loadHistory();
+      if (payload.questionBankMarkdown) {
+        setQuestionBankMarkdown(payload.questionBankMarkdown);
+      }
+      await Promise.all([loadHistory(), loadQuestionBankHistory()]);
     } catch (submissionError) {
       setError(getErrorMessage(submissionError, "Failed to generate cover letter."));
     } finally {
       setIsLoading(false);
+      setIsGeneratingQuestionBank(false);
     }
   }
 
@@ -625,12 +635,12 @@ export function CoverLetterForm() {
               <button
                 type="button"
                 onClick={() => void handleGenerateQuestionBank()}
-                disabled={isGeneratingQuestionBank}
+                disabled={isGeneratingQuestionBank || isLoading}
               >
                 {isGeneratingQuestionBank ? "Generating Q&A..." : "Generate Question Bank"}
               </button>
               <button type="submit" disabled={isLoading}>
-                {isLoading ? "Generating..." : "Generate Cover Letter"}
+                {isLoading ? "Generating Letter + Q&A..." : "Generate Cover Letter + Q&A"}
               </button>
             </div>
           </form>

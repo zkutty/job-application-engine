@@ -29,7 +29,17 @@ type JobPreview = {
   title: string;
   applicationStage: ApplicationStage;
   jdSummary: string;
+  jdInsights?: JdAnalysis | null;
   notes: JobPreviewNote[];
+};
+
+type JdAnalysis = {
+  companyGuess: string;
+  roleTitleGuess: string;
+  seniorityGuess: string;
+  competencies: string[];
+  keywords: string[];
+  tools: string[];
 };
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -131,6 +141,7 @@ export function JobsHome() {
             title: string;
             applicationStage: ApplicationStage;
             jdSummary: string;
+            jdInsights?: JdAnalysis | null;
             notes: JobPreviewNote[];
           };
           error?: string;
@@ -330,6 +341,52 @@ export function JobsHome() {
                     {APPLICATION_STAGE_LABELS[selectedJobPreview.applicationStage]}
                   </span>
                 </div>
+              </div>
+
+              <div>
+                <strong>JD Insights</strong>
+                {selectedJobPreview.jdInsights ? (
+                  <div className="stack">
+                    <div>
+                      <strong>Company Guess:</strong>{" "}
+                      <span className="small">{selectedJobPreview.jdInsights.companyGuess}</span>
+                    </div>
+                    <div>
+                      <strong>Role Guess:</strong>{" "}
+                      <span className="small">{selectedJobPreview.jdInsights.roleTitleGuess}</span>
+                    </div>
+                    <div>
+                      <strong>Seniority Guess:</strong>{" "}
+                      <span className="small">{selectedJobPreview.jdInsights.seniorityGuess}</span>
+                    </div>
+                    <div>
+                      <strong>Competencies</strong>
+                      <ul>
+                        {selectedJobPreview.jdInsights.competencies.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <strong>Keywords</strong>
+                      <ul>
+                        {selectedJobPreview.jdInsights.keywords.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <strong>Tools</strong>
+                      <ul>
+                        {selectedJobPreview.jdInsights.tools.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="small">No saved JD insights for this role yet.</p>
+                )}
               </div>
 
               <div>

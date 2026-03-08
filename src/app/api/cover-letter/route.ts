@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db/prisma";
 import { analyzeJd } from "@/lib/jd/analyze";
 import { resolveJobDescriptionInput } from "@/lib/jd/resolveInput";
 import { generateCoverLetter } from "@/lib/openai/client";
+import { questionBankToMarkdown } from "@/lib/prompts/questionBank";
+import { generateQuestionBank } from "@/lib/question-bank/generate";
 import { postCheckCoverLetter } from "@/lib/safety/coverLetter";
 import { selectTopStories } from "@/lib/stories/select";
 import { CoverLetterInputSchema } from "@/lib/validation/coverLetter";
@@ -41,6 +43,11 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const generateQuestionBankWithCoverLetter =
+      typeof (body as { generateQuestionBank?: unknown }).generateQuestionBank === "boolean"
+        ? (body as { generateQuestionBank: boolean }).generateQuestionBank
+        : false;
 
     const resolvedJobDescription = await resolveJobDescriptionInput(parsed.data.jobDescription);
 
@@ -122,6 +129,17 @@ export async function POST(request: Request) {
       );
     }
 
+    let questionBankMarkdown: string | null = null;
+    if (generateQuestionBankWithCoverLetter) {
+      const questionBank = await generateQuestionBank({
+        jobDescription: resolvedJobDescription,
+        profileSummary: profile?.summary,
+        voiceGuidelines: profile?.voiceGuidelines,
+        selectedStories: topStories,
+      });
+      questionBankMarkdown = questionBankToMarkdown(questionBank);
+    }
+
     const record = await prisma.job.create({
       data: {
         jdText: resolvedJobDescription,
@@ -131,10 +149,20 @@ export async function POST(request: Request) {
         title: jdSignals.roleTitleGuess,
         userId: auth.userId,
         artifacts: {
-          create: {
-            type: "cover_letter",
-            content: checked.sanitizedCoverLetter,
-          },
+          create: [
+            {
+              type: "cover_letter",
+              content: checked.sanitizedCoverLetter,
+            },
+            ...(questionBankMarkdown
+              ? [
+                  {
+                    type: "question_bank",
+                    content: questionBankMarkdown,
+                  },
+                ]
+              : []),
+          ],
         },
       },
       select: {
@@ -149,6 +177,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         coverLetter: checked.sanitizedCoverLetter,
+        questionBankMarkdown,
         artifactId: record.artifacts[0]?.id,
         createdAt: record.artifacts[0]?.createdAt,
       },

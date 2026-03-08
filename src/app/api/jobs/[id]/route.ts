@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ApplicationStageSchema } from "@/lib/application/stages";
 import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
+import { JdAnalysisSchema } from "@/lib/validation/jd";
 
 const JobRenameSchema = z.object({
   company: z.string().trim().min(1).max(120).optional(),
@@ -25,6 +26,18 @@ type JobRouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function parseSavedInsights(value: string | null): unknown {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    const validated = JdAnalysisSchema.safeParse(parsed);
+    return validated.success ? validated.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request, { params }: JobRouteContext) {
   const auth = await requireUserId(request);
   if (!auth.ok) return auth.response;
@@ -44,6 +57,7 @@ export async function GET(request: Request, { params }: JobRouteContext) {
         title: true,
         jdText: true,
         jdSummary: true,
+        jdInsightsJson: true,
         applicationStage: true,
         artifacts: {
           orderBy: { createdAt: "desc" },
@@ -83,6 +97,7 @@ export async function GET(request: Request, { params }: JobRouteContext) {
           title: job.title ?? "Untitled Role",
           jdText: job.jdText,
           jdSummary: job.jdSummary ?? job.jdText,
+          jdInsights: parseSavedInsights(job.jdInsightsJson),
           applicationStage: job.applicationStage,
           archived: job.applicationStage === "withdrawn",
           coverLetter: latestCoverLetter,
