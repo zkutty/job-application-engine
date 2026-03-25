@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { AuthNav } from "@/components/auth-nav";
+import { LogoutButton } from "@/components/logout-button";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 
 export const metadata: Metadata = {
   title: "HireSage",
   description: "Apply with wisdom. Generate tailored job application artifacts with AI guidance.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentUser = await getCurrentUser();
+
   return (
     <html lang="en">
       <body suppressHydrationWarning>
@@ -21,22 +24,44 @@ export default function RootLayout({
             <Link href="/" className="brandLink">
               HireSage
             </Link>
-            <Link href="/" className="navLink">
-              Home
-            </Link>
-            <Link href="/engine" className="navLink">
-              Engine
-            </Link>
-            <Link href="/profile" className="navLink">
-              Profile
-            </Link>
-            <Link href="/profile/import" className="navLink">
-              Import Profile
-            </Link>
-            <Link href="/stories" className="navLink">
-              Stories
-            </Link>
-            <AuthNav />
+            {currentUser ? (
+              <>
+                <Link href="/" className="navLink">
+                  Home
+                </Link>
+                <Link href="/engine" className="navLink">
+                  Engine
+                </Link>
+                <Link href="/profile" className="navLink">
+                  Profile
+                </Link>
+                <Link href="/profile/import" className="navLink">
+                  Import Profile
+                </Link>
+                <Link href="/stories" className="navLink">
+                  Stories
+                </Link>
+                <Link href="/account" className="navLink">
+                  Account
+                </Link>
+                <LogoutButton />
+              </>
+            ) : (
+              <>
+                <Link href="/#how-it-works" className="navLink">
+                  How It Works
+                </Link>
+                <Link href="/#features" className="navLink">
+                  Features
+                </Link>
+                <Link href="/login" className="navLink">
+                  Login
+                </Link>
+                <Link href="/#auth" className="primaryLinkButton navCta">
+                  Start Free
+                </Link>
+              </>
+            )}
           </nav>
         </header>
         {children}
