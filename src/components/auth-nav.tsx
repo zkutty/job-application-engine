@@ -9,7 +9,7 @@ type AuthState = "loading" | "authenticated" | "anonymous";
 
 type MeResponse = {
   user?: {
-    id: number;
+    id: string;
     email: string;
     createdAt: string;
   };

@@ -29,8 +29,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
     },
   });
 
-  const userIdFromMetadata = Number(session.metadata?.userId ?? NaN);
-  if (Number.isInteger(userIdFromMetadata) && userIdFromMetadata > 0) {
+  const userIdFromMetadata = session.metadata?.userId ?? null;
+  if (userIdFromMetadata) {
     await prisma.entitlement.upsert({
       where: {
         userId_featureKey: {

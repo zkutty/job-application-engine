@@ -1,20 +1,32 @@
 import { NextResponse } from "next/server";
 
-import { requireUserId } from "@/lib/auth/requireUser";
 import { prisma } from "@/lib/db/prisma";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET(request: Request) {
-  const auth = await requireUserId(request);
-  if (!auth.ok) return auth.response;
+export async function GET() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const user = await prisma.user.findUnique({
-    where: { id: auth.userId },
+  if (!user) {
+    return NextResponse.json(
+      { error: "Authentication required." },
+      { status: 401 },
+    );
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
     select: { id: true, email: true, createdAt: true },
   });
 
-  if (!user) {
-    return NextResponse.json({ error: "User account not found." }, { status: 404 });
+  if (!dbUser) {
+    return NextResponse.json(
+      { error: "User account not found." },
+      { status: 404 },
+    );
   }
 
-  return NextResponse.json({ user }, { status: 200 });
+  return NextResponse.json({ user: dbUser }, { status: 200 });
 }

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Job {
@@ -19,7 +20,7 @@ model Job {
   applicationStage String     @default("exploring")
   artifacts        Artifact[]
   notes            JobNote[]
-  userId           Int
+  userId           String
   user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -46,7 +47,7 @@ model CandidateProfile {
   voiceGuidelines String
   profileJson     String?
   rawResumeText   String?
-  userId          Int      @unique
+  userId          String   @unique
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -58,39 +59,23 @@ model Story {
   action    String
   result    String
   tagsJson  String
-  userId    Int
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model User {
-  id                Int                @id @default(autoincrement())
-  email             String             @unique
-  passwordHash      String?
-  googleSub         String?            @unique
-  createdAt         DateTime           @default(now())
-  sessions          Session[]
-  passwordResetTokens PasswordResetToken[]
-  jobs              Job[]
-  stories           Story[]
-  candidateProfile  CandidateProfile?
-  billingCustomer   BillingCustomer?
-  subscriptions     BillingSubscription[]
-  entitlements      Entitlement[]
-  donationPayments  DonationPayment[]
-}
-
-model Session {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
+  id               String               @id
+  email            String               @unique
+  createdAt        DateTime             @default(now())
+  jobs             Job[]
+  stories          Story[]
+  candidateProfile CandidateProfile?
+  billingCustomer  BillingCustomer?
+  subscriptions    BillingSubscription[]
+  entitlements     Entitlement[]
+  donationPayments DonationPayment[]
 }
 
 model JobNote {
@@ -106,24 +91,12 @@ model JobNote {
   @@index([createdAt])
 }
 
-model PasswordResetToken {
-  id         Int      @id @default(autoincrement())
-  tokenHash  String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
-}
-
 model BillingCustomer {
   id               Int                   @id @default(autoincrement())
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   stripeCustomerId String                @unique
-  userId           Int                   @unique
+  userId           String                @unique
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptions    BillingSubscription[]
   donationPayments DonationPayment[]
@@ -140,7 +113,7 @@ model BillingSubscription {
   currentPeriodEnd     DateTime?
   customerId           Int
   customer             BillingCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  userId               Int
+  userId               String
   user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
@@ -148,33 +121,33 @@ model BillingSubscription {
 }
 
 model Entitlement {
-  id         Int      @id @default(autoincrement())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   featureKey String
-  enabled    Boolean  @default(false)
-  source     String   @default("manual")
+  enabled    Boolean   @default(false)
+  source     String    @default("manual")
   expiresAt  DateTime?
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, featureKey])
   @@index([featureKey, enabled])
 }
 
 model DonationPayment {
-  id                      Int             @id @default(autoincrement())
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
-  stripeCheckoutSessionId String          @unique
+  id                      Int              @id @default(autoincrement())
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  stripeCheckoutSessionId String           @unique
   stripePaymentIntentId   String?
-  status                  String          @default("pending")
+  status                  String           @default("pending")
   amountCents             Int
-  currency                String          @default("usd")
+  currency                String           @default("usd")
   customerId              Int?
   customer                BillingCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  userId                  Int
-  user                    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                  String
+  user                    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
   @@index([userId, createdAt])

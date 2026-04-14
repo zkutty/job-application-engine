@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "register";
 
@@ -33,21 +34,29 @@ export function AuthPanel({
     }
   }, []);
 
+  const supabase = createSupabaseBrowserClient();
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setStatus(mode === "login" ? "Signing in..." : "Creating account...");
 
     try {
-      const response = await fetch(mode === "login" ? "/api/auth/login" : "/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Authentication failed.");
+      if (mode === "register") {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          },
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
       }
 
       setStatus("Success. Redirecting...");
@@ -57,6 +66,18 @@ export function AuthPanel({
       setStatus(error instanceof Error ? error.message : "Authentication failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    });
+    if (error) {
+      setStatus(error.message);
     }
   }
 
@@ -117,7 +138,7 @@ export function AuthPanel({
             onChange={(event) => setPassword(event.target.value)}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             required
-            minLength={8}
+            minLength={6}
           />
         </label>
 
@@ -132,25 +153,21 @@ export function AuthPanel({
         <button
           type="button"
           className="secondaryButton authGoogleButton"
-          onClick={() => {
-            window.location.href = "/api/auth/google/start";
-          }}
+          onClick={handleGoogleSignIn}
         >
           Continue with Google
         </button>
-
-        {mode === "login" ? (
-          <p className="small">
-            <Link href="/reset-password">Forgot password?</Link>
-          </p>
-        ) : null}
       </form>
 
       <div className="authPanelFooter stack">
         <p className="small">
           Your saved roles, stories, and generated artifacts stay private to your account.
         </p>
-        <p className={`small authStatus ${status ? "authStatusVisible" : ""}`} role="status" aria-live="polite">
+        <p
+          className={`small authStatus ${status ? "authStatusVisible" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
           {status || " "}
         </p>
       </div>

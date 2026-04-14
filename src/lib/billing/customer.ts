@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { getStripeClient } from "@/lib/stripe/server";
 
-export async function ensureBillingCustomerForUser(userId: number): Promise<{
+export async function ensureBillingCustomerForUser(userId: string): Promise<{
   customerId: number;
   stripeCustomerId: string;
 }> {
