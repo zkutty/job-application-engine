@@ -62,7 +62,8 @@ export async function GET(request: Request) {
       },
       { status: 200 },
     );
-  } catch {
+  } catch (err) {
+    console.error("[/api/jobs] Prisma error:", err);
     return NextResponse.json({ error: "Failed to load jobs." }, { status: 500 });
   }
 }
