@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -16,17 +15,11 @@ export async function GET() {
     );
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { id: true, email: true, createdAt: true },
-  });
-
-  if (!dbUser) {
-    return NextResponse.json(
-      { error: "User account not found." },
-      { status: 404 },
-    );
-  }
-
-  return NextResponse.json({ user: dbUser }, { status: 200 });
+  return NextResponse.json({
+    user: {
+      id: user.id,
+      email: user.email ?? "",
+      createdAt: user.created_at,
+    },
+  }, { status: 200 });
 }
