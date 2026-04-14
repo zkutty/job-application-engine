@@ -63,6 +63,10 @@ export async function GET(request: Request) {
       { status: 200 },
     );
   } catch (err) {
+    try {
+      const u = new URL(process.env.DATABASE_URL ?? "");
+      console.error("[/api/jobs] DB host:", u.hostname, "port:", u.port, "user:", u.username);
+    } catch { /* ignore */ }
     console.error("[/api/jobs] Prisma error:", err);
     return NextResponse.json({ error: "Failed to load jobs." }, { status: 500 });
   }
