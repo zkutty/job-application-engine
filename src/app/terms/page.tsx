@@ -188,7 +188,7 @@ export default function TermsOfServicePage() {
           <h2>13. Contact</h2>
           <p>
             If you have questions about these terms, please contact us at{" "}
-            <a href="mailto:support@hiresage.com">support@hiresage.com</a>.
+            <a href="mailto:zkutlow@gmail.com">zkutlow@gmail.com</a>.
           </p>
         </section>
       </div>

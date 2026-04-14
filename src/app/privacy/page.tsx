@@ -171,7 +171,7 @@ export default function PrivacyPolicyPage() {
           <p>
             If you have questions about this privacy policy or wish to exercise
             your data rights, please contact us at{" "}
-            <a href="mailto:privacy@hiresage.com">privacy@hiresage.com</a>.
+            <a href="mailto:zkutlow@gmail.com">zkutlow@gmail.com</a>.
           </p>
         </section>
       </div>

@@ -71,7 +71,7 @@ export default async function RootLayout({
             <nav className="siteFooterLinks">
               <Link href="/privacy" className="small">Privacy Policy</Link>
               <Link href="/terms" className="small">Terms of Service</Link>
-              <a href="mailto:support@hiresage.com" className="small">Contact</a>
+              <a href="mailto:zkutlow@gmail.com" className="small">Contact</a>
             </nav>
           </div>
         </footer>
