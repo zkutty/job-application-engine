@@ -65,6 +65,16 @@ export default async function RootLayout({
           </nav>
         </header>
         {children}
+        <footer className="siteFooter">
+          <div className="siteFooterInner">
+            <p className="small">&copy; {new Date().getFullYear()} HireSage. All rights reserved.</p>
+            <nav className="siteFooterLinks">
+              <Link href="/privacy" className="small">Privacy Policy</Link>
+              <Link href="/terms" className="small">Terms of Service</Link>
+              <a href="mailto:support@hiresage.com" className="small">Contact</a>
+            </nav>
+          </div>
+        </footer>
       </body>
     </html>
   );

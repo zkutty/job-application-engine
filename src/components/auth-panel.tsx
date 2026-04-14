@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "register";
@@ -163,6 +164,13 @@ export function AuthPanel({
         <p className="small">
           Your saved roles, stories, and generated artifacts stay private to your account.
         </p>
+        {mode === "register" && (
+          <p className="small">
+            By creating an account, you agree to our{" "}
+            <Link href="/terms">Terms of Service</Link> and{" "}
+            <Link href="/privacy">Privacy Policy</Link>.
+          </p>
+        )}
         <p
           className={`small authStatus ${status ? "authStatusVisible" : ""}`}
           role="status"
